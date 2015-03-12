@@ -155,16 +155,28 @@ variable_definitions:
     
   - name: ave_parcel_size
     dataframe: parcels
-    varname: parcel_acr
+    varname: parcel_acres
     radius: 800
     aggregation: average
     decay: flat
     apply: np.log1p
 
-  # - name: ave_income
-    # dataframe: households
-    # varname: income
-    # radius: 1500
-    # aggregation: average
-    # decay: flat
-    # apply: np.log1p
+  - name: ave_income
+    dataframe: households
+    varname: income
+    radius: 1500
+    aggregation: average
+    decay: flat
+    apply: np.log1p
+
+  - name: job_spaces_3000m
+    dataframe: buildings
+    varname: job_spaces
+    radius: 3000
+    aggregation: sum
+    decay: flat
+    
+  - name: jobs_3000m
+    dataframe: jobs
+    radius: 3000
+    decay: flat

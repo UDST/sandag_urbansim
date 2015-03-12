@@ -1,0 +1,134 @@
+name: nrh
+
+model_type: segmented_regression
+
+segmentation_col: development_type_id
+
+fit_filters:
+- nonres_rent_per_sqft > 0
+
+predict_filters:
+- non_residential_sqft > 0
+
+min_segment_size: 10
+
+default_config:
+    model_expression: np.log1p(nonres_rent_per_sqft) ~ I(year_built < 1940) + I(year_built
+        > 2005) + np.log1p(stories) + ave_income + jobs + year_built + distance_to_coast
+        + distance_to_freeway + distance_to_onramp + distance_to_transit
+    ytransform: np.exp
+
+models:
+    &id001 !!python/long '2':
+        fit_parameters:
+            Coefficient:
+                I(year_built < 1940)[T.True]: 0.5728862858273397
+                I(year_built > 2005)[T.True]: 0.09812881176325472
+                Intercept: -2.0844437251709347
+                ave_income: -0.0014814952996394012
+                distance_to_coast: -4.264491566552255e-06
+                distance_to_freeway: -1.089462614208778e-05
+                jobs: 0.06580232008538972
+                np.log1p(stories): 0.4549557435660602
+                year_built: 0.0019376007098399763
+            Std. Error:
+                I(year_built < 1940)[T.True]: 0.2856064017927837
+                I(year_built > 2005)[T.True]: 0.0300406423148322
+                Intercept: 1.4482495859141251
+                ave_income: 0.0014872472233176494
+                distance_to_coast: 4.3868875731381116e-07
+                distance_to_freeway: 1.8597216809923394e-06
+                jobs: 0.0077025989039486075
+                np.log1p(stories): 0.04144252925604675
+                year_built: 0.0007272597316832176
+            T-Score:
+                I(year_built < 1940)[T.True]: 2.0058594003189976
+                I(year_built > 2005)[T.True]: 3.266535073879057
+                Intercept: -1.439284875648867
+                ave_income: -0.9961325033336306
+                distance_to_coast: -9.720995798170634
+                distance_to_freeway: -5.858202468379276
+                jobs: 8.542872464988054
+                np.log1p(stories): 10.977991732965455
+                year_built: 2.664248583316261
+        fit_rsquared: 0.1931551928380637
+        fit_rsquared_adj: 0.18959492893442575
+        fitted: true
+        model_expression: np.log1p(nonres_rent_per_sqft) ~ I(year_built < 1940) +
+            I(year_built > 2005) + np.log1p(stories) + ave_income + jobs + year_built
+            + distance_to_coast + distance_to_freeway
+        name: *id001
+    &id002 !!python/long '4':
+        fit_parameters:
+            Coefficient:
+                I(year_built < 1940)[T.True]: 0.21226812748428864
+                I(year_built > 2005)[T.True]: 0.0981615725618466
+                Intercept: -11.610891763636952
+                ave_income: 0.005527295945014747
+                distance_to_coast: -6.2514101229760895e-06
+                jobs: -0.03745913393810389
+                np.log1p(stories): 0.13234246435368668
+                year_built: 0.0075270647796897554
+            Std. Error:
+                I(year_built < 1940)[T.True]: 0.13583106354791044
+                I(year_built > 2005)[T.True]: 0.048387628879973166
+                Intercept: 1.7923078997472874
+                ave_income: 0.00332824175880904
+                distance_to_coast: 5.735795770094645e-07
+                jobs: 0.012032113100011023
+                np.log1p(stories): 0.023227973715206972
+                year_built: 0.0008955119707049256
+            T-Score:
+                I(year_built < 1940)[T.True]: 1.562736254431353
+                I(year_built > 2005)[T.True]: 2.028650190844008
+                Intercept: -6.47817920418365
+                ave_income: 1.6607254957922901
+                distance_to_coast: -10.898941269090788
+                jobs: -3.113263117354638
+                np.log1p(stories): 5.697546672658935
+                year_built: 8.405320113995383
+        fit_rsquared: 0.22721515210980714
+        fit_rsquared_adj: 0.2219632162503592
+        fitted: true
+        model_expression: np.log1p(nonres_rent_per_sqft) ~ I(year_built < 1940) +
+            I(year_built > 2005) + np.log1p(stories) + ave_income + jobs + year_built
+            + distance_to_coast
+        name: *id002
+    &id003 !!python/long '5':
+        fit_parameters:
+            Coefficient:
+                I(year_built < 1940)[T.True]: 0.12947751378998482
+                I(year_built > 2005)[T.True]: 0.214381446812309
+                Intercept: -3.670380146169632
+                ave_income: 0.04986054752642912
+                distance_to_coast: -4.849716838420553e-06
+                jobs: 0.026207092150721527
+                np.log1p(stories): 0.044999870779704756
+                year_built: 0.003015736433706418
+            Std. Error:
+                I(year_built < 1940)[T.True]: 0.07234453538337919
+                I(year_built > 2005)[T.True]: 0.06508005118002157
+                Intercept: 1.502798209402346
+                ave_income: 0.006445343343386138
+                distance_to_coast: 5.440778399256306e-07
+                jobs: 0.010240831439016598
+                np.log1p(stories): 0.04725528575949454
+                year_built: 0.0007537303123672799
+            T-Score:
+                I(year_built < 1940)[T.True]: 1.789734540471341
+                I(year_built > 2005)[T.True]: 3.2941192104981063
+                Intercept: -2.4423639336310634
+                ave_income: 7.7359024756366646
+                distance_to_coast: -8.913645222314983
+                jobs: 2.5590785579064397
+                np.log1p(stories): 0.9522716889012437
+                year_built: 4.001081533041623
+        fit_rsquared: 0.1340078008120137
+        fit_rsquared_adj: 0.12952079459860444
+        fitted: true
+        model_expression: np.log1p(nonres_rent_per_sqft) ~ I(year_built < 1940) +
+            I(year_built > 2005) + np.log1p(stories) + ave_income + jobs + year_built
+            + distance_to_coast
+        name: *id003
+
+fitted: true
