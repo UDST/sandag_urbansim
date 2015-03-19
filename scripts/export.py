@@ -14,7 +14,7 @@ db_config = dict(load_config().items('database'))
 
 ## UrbanCanvas db config
 urbancanvas_db_config = {'database': 'sandag',
-                         'host': '67.225.185.54',
+                         'host': 'urbancanvas.cp2xwchuariu.us-west-2.rds.amazonaws.com',
                          'password': 'parcel22building',
                          'port': '5432',
                          'user': 'sandag'}
@@ -26,7 +26,7 @@ exec_sql("CREATE SCHEMA IF NOT EXISTS loading;")
 #UrbanCanvas exec_sql func, for executing sql on UrbanCanvas database
 def exec_sql2(query):
     print query
-    conn_string = "host=67.225.185.54 dbname='sandag' user='sandag' password='parcel22building' port=5432"
+    conn_string = "host=urbancanvas.cp2xwchuariu.us-west-2.rds.amazonaws.com dbname='sandag' user='sandag' password='parcel22building' port=5432"
     import psycopg2
     conn=psycopg2.connect(conn_string)
     cur = conn.cursor()
