@@ -60,5 +60,29 @@ def nonres_occupancy(nodes):
     return nodes.jobs_3000m / (nodes.job_spaces_3000m + 1.0)
     
     
+#####################
+# BUILDINGS VARIABLES
+#####################
+
+@sim.column('buildings', 'luz_id')
+def luz_id(buildings, parcels):
+    return misc.reindex(parcels.luz_id, buildings.parcel_id)
     
+#####################
+# HOUSEHOLD VARIABLES
+#####################
+
+@sim.column('households', 'luz_id', cache=True)
+def luz_id(households, buildings):
+    return misc.reindex(buildings.luz_id, households.building_id)
+    
+@sim.column('households', 'activity_id')
+def activity_id(households):
+    idx_38 = (households.income < 25000) & (households.persons < 3)
+    idx_39 = (households.income < 25000) & (households.persons >= 3)
+    idx_40 = (households.income >= 25000) & (households.income < 150000) & (households.persons < 3)
+    idx_41 = (households.income >= 25000) & (households.income < 150000) & (households.persons >= 3)
+    idx_42 = (households.income >= 150000) & (households.persons < 3)
+    idx_43 = (households.income >= 150000) & (households.persons >= 3)
+    return 38*idx_38 + 39*idx_39 + 40*idx_40 + 41*idx_41 + 42*idx_42 + 43*idx_43
     

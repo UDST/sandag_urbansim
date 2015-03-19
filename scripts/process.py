@@ -172,3 +172,13 @@ if 'id' in costar_joined.columns:
     del costar_joined['id']
     
 df_to_db(costar_joined, 'costar', schema=loader.tables.public)
+
+
+##LUZ Control Totals
+
+hh_controls = db_to_df('select * from staging.pecas_hh_controls;')
+hh_controls = hh_controls[['yr', 'activity_id', 'luz_id', 'total_hh_controls']]
+hh_controls = hh_controls.rename(columns = {'yr':'year', 'total_hh_controls':'total_number_of_households'})
+hh_controls.total_number_of_households = np.round(hh_controls.total_number_of_households).astype('int')
+hh_controls.index.name = 'idx'
+df_to_db(hh_controls, 'annual_household_control_totals', schema=loader.tables.public)

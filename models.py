@@ -25,4 +25,13 @@ def build_networks(parcels):
     p['node_id'] = net.get_node_ids(p['x'], p['y'])
     sim.add_table("parcels", p)
 
-##Put in the simple examples here
+@sim.model('households_transition')
+def households_transition(households, persons, annual_household_control_totals, year):
+    ct = annual_household_control_totals.to_frame()
+    tran = transition.TabularTotalsTransition(ct, 'total_number_of_households')
+    model = transition.TransitionModel(tran)
+    hh = households.to_frame(households.local_columns)
+    new, added_hh_idx = \
+        model.transition(hh, year,)
+    new.loc[added_hh_idx, "building_id"] = -1
+    sim.add_table("households", new)

@@ -29,4 +29,5 @@ check_run('process.py')
 print("SUMMARIZING: Exporting model tables to HDF5 and UrbanCanvas.")
         
 # Outputting for use
-check_run('export.py')
+check_run('export_to_h5.py')
+#check_run('export_to_uc.py')

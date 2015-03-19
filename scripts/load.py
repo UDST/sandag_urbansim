@@ -80,6 +80,9 @@ csvs = {
     'zoning_allowed_uses':
     'zoning/zoning_allowed_uses.csv',
 
+    'pecas_hh_controls':
+    'luz_controls/Pecas_HH_controls.csv',
+    
 }
 
 for tbl in csvs.iterkeys():
