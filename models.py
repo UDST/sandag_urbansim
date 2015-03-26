@@ -4,7 +4,7 @@ import os
 import sys
 import datasources
 import variables
-from urbansim import accounts
+from urbansim.models import transition
 from urbansim_defaults import models
 from urbansim_defaults import utils
 import numpy as np
@@ -35,3 +35,13 @@ def households_transition(households, persons, annual_household_control_totals, 
         model.transition(hh, year,)
     new.loc[added_hh_idx, "building_id"] = -1
     sim.add_table("households", new)
+    
+@sim.model('nrh_estimate2')
+def nrh_estimate2(costar, aggregations):
+    return utils.hedonic_estimate("nrh2.yaml", costar, aggregations)
+
+
+@sim.model('nrh_simulate')
+def nrh_simulate2(buildings, aggregations):
+    return utils.hedonic_simulate("nrh2.yaml", buildings, aggregations,
+                                  "non_residential_price")

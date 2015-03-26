@@ -51,12 +51,23 @@ def distance_to_transit(parcels, costar):
 # def nonres_occupancy(nodes, costar):
     # return misc.reindex(nodes.nonres_occupancy, costar.node_id)
     
-@sim.column('buildings', 'job_spaces')
-def job_spaces(parcels, buildings):
-    return np.round(buildings.non_residential_sqft / 200.0)
+@sim.column('costar', 'pecas_price')
+def pecas_price(costar, pecas_prices):
+    costar = costar.to_frame(columns = ['development_type_id', 'luz_id'])
+    pecas_prices = pecas_prices.to_frame()
+    year = sim.get_injectable('year')
+    if year is None:
+        year = 2012
+    pecas_prices = pecas_prices[pecas_prices.year == year]
+    costar.index.name = 'costar_id'
+    merged = pd.merge(costar.reset_index(), pecas_prices, left_on = ['luz_id', 'development_type_id'], right_on = ['luz_id', 'development_type_id']).set_index('costar_id')
+    return pd.Series(data = merged.price, index = costar.index).fillna(0)
     
-@sim.column('nodes', 'nonres_occupancy')
-def nonres_occupancy(nodes):
+    
+####NODES
+    
+@sim.column('nodes', 'nonres_occupancy_3000m')
+def nonres_occupancy_3000m(nodes):
     return nodes.jobs_3000m / (nodes.job_spaces_3000m + 1.0)
     
     
@@ -64,9 +75,24 @@ def nonres_occupancy(nodes):
 # BUILDINGS VARIABLES
 #####################
 
+@sim.column('buildings', 'job_spaces')
+def job_spaces(parcels, buildings):
+    return np.round(buildings.non_residential_sqft / 200.0)
+
 @sim.column('buildings', 'luz_id')
 def luz_id(buildings, parcels):
     return misc.reindex(parcels.luz_id, buildings.parcel_id)
+    
+@sim.column('buildings', 'pecas_price')
+def pecas_price(buildings, pecas_prices):
+    buildings = buildings.to_frame(columns = ['development_type_id', 'luz_id'])
+    pecas_prices = pecas_prices.to_frame()
+    year = sim.get_injectable('year')
+    if year is None:
+        year = 2012
+    pecas_prices = pecas_prices[pecas_prices.year == year]
+    merged = pd.merge(buildings.reset_index(), pecas_prices, left_on = ['luz_id', 'development_type_id'], right_on = ['luz_id', 'development_type_id']).set_index('building_id')
+    return pd.Series(data = merged.price, index = buildings.index).fillna(0)
     
 #####################
 # HOUSEHOLD VARIABLES

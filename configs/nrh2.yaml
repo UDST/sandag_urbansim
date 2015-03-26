@@ -1,0 +1,59 @@
+name: nrh
+
+model_type: regression
+
+fit_filters:
+- nonres_rent_per_sqft > 0
+
+predict_filters:
+- (development_type_id not in [2,5,4]) & (non_residential_sqft > 0)
+
+model_expression: np.log1p(nonres_rent_per_sqft) ~ I(year_built < 1940) + I(year_built
+    > 2005) + np.log1p(stories) + ave_income + jobs_400m + year_built + distance_to_coast
+    + distance_to_freeway + pecas_price + nonres_occupancy_3000m
+
+ytransform: np.exp
+
+fitted: true
+
+fit_parameters:
+    Coefficient:
+        I(year_built < 1940)[T.True]: 0.1340079476515378
+        I(year_built > 2005)[T.True]: 0.08528583017719839
+        Intercept: -1.2957106244518832
+        ave_income: 0.01766885285019388
+        distance_to_coast: -6.280917817407563e-06
+        distance_to_freeway: -7.706948633245826e-06
+        jobs_400m: 0.007252135537309777
+        nonres_occupancy_3000m: 0.4786417521554985
+        np.log1p(stories): 0.3179760317069936
+        pecas_price: 0.019392905363441446
+        year_built: 0.001826090285124561
+    Std. Error:
+        I(year_built < 1940)[T.True]: 0.06334565152753911
+        I(year_built > 2005)[T.True]: 0.029839252806077105
+        Intercept: 1.0391333627265171
+        ave_income: 0.0017170844040015824
+        distance_to_coast: 3.5818768510159506e-07
+        distance_to_freeway: 1.687188206791523e-06
+        jobs_400m: 0.005447264177019172
+        nonres_occupancy_3000m: 0.05641753016715231
+        np.log1p(stories): 0.02006127356606518
+        pecas_price: 0.0010614958262197352
+        year_built: 0.0005241849696930959
+    T-Score:
+        I(year_built < 1940)[T.True]: 2.1155035021350868
+        I(year_built > 2005)[T.True]: 2.858175797211281
+        Intercept: -1.2469146607439772
+        ave_income: 10.290031642601534
+        distance_to_coast: -17.535270135337193
+        distance_to_freeway: -4.56792467030214
+        jobs_400m: 1.3313353826137102
+        nonres_occupancy_3000m: 8.483918929761579
+        np.log1p(stories): 15.850241544229213
+        pecas_price: 18.269412732883428
+        year_built: 3.483675402203377
+
+fit_rsquared_adj: 0.25683917897941333
+
+fit_rsquared: 0.25860105859302296

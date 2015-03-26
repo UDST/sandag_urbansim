@@ -8,9 +8,29 @@ node_col: node_id
 
 variable_definitions:
 
-  - name: jobs
+  - name: households_1500m
+    dataframe: households
+    radius: 1500
+    apply: np.log1p
+    
+  - name: jobs_3000m
     dataframe: jobs
     radius: 3000
+    apply: np.log1p
+
+  - name: jobs_1500m
+    dataframe: jobs
+    radius: 1500
+    apply: np.log1p
+    
+  - name: jobs_800m
+    dataframe: jobs
+    radius: 800
+    apply: np.log1p
+    
+  - name: jobs_400m
+    dataframe: jobs
+    radius: 400
     apply: np.log1p
     
   - name: jobs1
@@ -166,6 +186,38 @@ variable_definitions:
     varname: income
     radius: 1500
     aggregation: average
+    decay: flat
+    apply: np.log1p
+    
+  - name: population_400m
+    dataframe: households
+    varname: persons
+    radius: 400
+    aggregation: sum
+    decay: flat
+    apply: np.log1p
+    
+  - name: population_800m
+    dataframe: households
+    varname: persons
+    radius: 800
+    aggregation: sum
+    decay: flat
+    apply: np.log1p
+    
+  - name: population_1500m
+    dataframe: households
+    varname: persons
+    radius: 1500
+    aggregation: sum
+    decay: flat
+    apply: np.log1p
+    
+  - name: population_3000m
+    dataframe: households
+    varname: persons
+    radius: 3000
+    aggregation: sum
     decay: flat
     apply: np.log1p
 

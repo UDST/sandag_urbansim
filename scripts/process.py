@@ -182,3 +182,12 @@ hh_controls = hh_controls.rename(columns = {'yr':'year', 'total_hh_controls':'to
 hh_controls.total_number_of_households = np.round(hh_controls.total_number_of_households).astype('int')
 hh_controls.index.name = 'idx'
 df_to_db(hh_controls, 'annual_household_control_totals', schema=loader.tables.public)
+
+##LUZ Prices
+pecas_prices = db_to_df('select * from staging.pecas_price_predictions;')
+space_dev_type_xref =  db_to_df('select * from staging.xref_space_type_dev_type;')
+pecas_prices = pd.merge(pecas_prices, space_dev_type_xref, left_on = 'space_type_id', right_on = 'space_type_id')[['yr', 'luz_id', 'development_type_id', 'price']]
+pecas_prices = pecas_prices.groupby(['yr', 'luz_id', 'development_type_id']).price.mean().reset_index()
+pecas_prices = pecas_prices.rename(columns = {'yr':'year'})
+pecas_prices.index.name = 'idx'
+df_to_db(pecas_prices, 'pecas_prices', schema=loader.tables.public)

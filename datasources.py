@@ -36,6 +36,12 @@ def costar(store):
     df = store['costar']
     return df
 
+# luz price from pecas
+@sim.table('pecas_prices', cache=True)
+def pecas_prices(store):
+    df = store['pecas_prices']
+    return df
+
 # a table of home sales data
 # @sim.table('homesales', cache=True)
 # def homesales(store):

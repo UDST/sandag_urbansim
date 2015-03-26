@@ -83,6 +83,13 @@ csvs = {
     'pecas_hh_controls':
     'luz_controls/Pecas_HH_controls.csv',
     
+    'xref_space_type_dev_type':
+    'xref/xref_space_type_and_development_type.csv',
+
+    'pecas_price_predictions':
+    'luz_controls/pecas_PriceAndSpaceQuantity.csv',
+
+    
 }
 
 for tbl in csvs.iterkeys():
