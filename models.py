@@ -41,7 +41,21 @@ def nrh_estimate2(costar, aggregations):
     return utils.hedonic_estimate("nrh2.yaml", costar, aggregations)
 
 
-@sim.model('nrh_simulate')
+@sim.model('nrh_simulate2')
 def nrh_simulate2(buildings, aggregations):
     return utils.hedonic_simulate("nrh2.yaml", buildings, aggregations,
-                                  "non_residential_price")
+                                  "nonres_rent_per_sqft")
+                                  
+@sim.model('rsh_estimate')
+def rsh_estimate(assessor_transactions, aggregations):
+    return utils.hedonic_estimate("rsh.yaml", assessor_transactions, aggregations)
+    
+@sim.model('rsh_simulate')
+def rsh_simulate(buildings, aggregations):
+    return utils.hedonic_simulate("rsh.yaml", buildings, aggregations,
+                                  "res_price_per_sqft")
+
+@sim.model('nrh_simulate')
+def nrh_simulate(buildings, aggregations):
+    return utils.hedonic_simulate("nrh.yaml", buildings, aggregations,
+                                  "nonres_rent_per_sqft")

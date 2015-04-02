@@ -3,6 +3,7 @@ import pandas.io.sql as sql
 from spandex.io import exec_sql,  df_to_db
 from spandex import TableLoader
 from urbansim.models.lcm import unit_choice
+import datetime
 
 loader = TableLoader()
 
@@ -174,7 +175,7 @@ if 'id' in costar_joined.columns:
 df_to_db(costar_joined, 'costar', schema=loader.tables.public)
 
 
-##LUZ Control Totals
+## LUZ Control Totals
 
 hh_controls = db_to_df('select * from staging.pecas_hh_controls;')
 hh_controls = hh_controls[['yr', 'activity_id', 'luz_id', 'total_hh_controls']]
@@ -183,7 +184,7 @@ hh_controls.total_number_of_households = np.round(hh_controls.total_number_of_ho
 hh_controls.index.name = 'idx'
 df_to_db(hh_controls, 'annual_household_control_totals', schema=loader.tables.public)
 
-##LUZ Prices
+## LUZ Prices
 pecas_prices = db_to_df('select * from staging.pecas_price_predictions;')
 space_dev_type_xref =  db_to_df('select * from staging.xref_space_type_dev_type;')
 pecas_prices = pd.merge(pecas_prices, space_dev_type_xref, left_on = 'space_type_id', right_on = 'space_type_id')[['yr', 'luz_id', 'development_type_id', 'price']]
@@ -191,3 +192,35 @@ pecas_prices = pecas_prices.groupby(['yr', 'luz_id', 'development_type_id']).pri
 pecas_prices = pecas_prices.rename(columns = {'yr':'year'})
 pecas_prices.index.name = 'idx'
 df_to_db(pecas_prices, 'pecas_prices', schema=loader.tables.public)
+
+
+## Assessor residential parcel transactions
+transactions = db_to_df('select * from staging.assessor_transactions')
+transactions['oc_doc_date'] = pd.to_datetime(transactions.oc_doc_date)
+transactions = transactions[transactions.oc_doc_date > datetime.datetime(2010,1,1)]
+transactions = transactions[(transactions.parcelid > 0) & (transactions.oc_price > 0)]
+transactions = transactions.rename(columns = {'parcelid':'parcel_id', 'year_effective':'year_built',})
+transactions = transactions.groupby('parcel_id').apply(lambda t: t[t.oc_doc_date==t.oc_doc_date.max()])
+transactions['view'] = False
+transactions.view[transactions.has_view == 'True'] = True
+transactions = transactions[['year_built', 'beds', 'baths', 'sqft', 'view', 'oc_doc_date', 'oc_price']]
+
+transactions = transactions.reset_index().set_index('parcel_id')
+if 'level_1' in transactions.columns:
+    del transactions['level_1']
+
+buildings = db_to_df('select * from buildings').set_index('building_id')
+if 'id' in buildings.columns:
+    del buildings['id']
+if 'job_spaces' in buildings.columns:
+    del buildings['job_spaces']
+
+transactions_joined = pd.merge(transactions[['oc_doc_date', 'oc_price',]], buildings, left_index = True, right_on = 'parcel_id')
+transactions_joined = transactions_joined[transactions_joined.development_type_id.isin([19, 20, 21])]
+transactions_joined = transactions_joined[(transactions_joined.residential_units > 0) & (transactions_joined.residential_sqft > 0)]
+
+transactions_joined['res_price_per_sqft'] = transactions_joined.oc_price / transactions_joined.residential_sqft
+del transactions_joined['oc_doc_date']
+del transactions_joined['oc_price']
+
+df_to_db(transactions_joined, 'assessor_transactions', schema=loader.tables.public)

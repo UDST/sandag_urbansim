@@ -89,6 +89,8 @@ csvs = {
     'pecas_price_predictions':
     'luz_controls/pecas_PriceAndSpaceQuantity.csv',
 
+    'assessor_transactions':
+    'price/parcelTransactions.csv',
     
 }
 
@@ -117,7 +119,26 @@ for tbl in csvs.iterkeys():
 
 
 # Load excel
+
 # xls_path = loader.get_path('scheduled/scheduled_development.xlsx')
-# df = pd.read_excel(xls_path)
 # df_to_db(df, 'scheduled_development', schema = staging)
+
+## MarketPointe multifamily rents (some munging needed to load)
+xls_path = loader.get_path('price/marketPointe.xlsx')
+df = pd.read_excel(xls_path)
+df = df.rename(columns = {'$/Sqft':'price_per_sqft', '#Bldg':'number_of_buildings', '#Stories':'stories', 'ZipCode':'zipcode'})
+df.index.name = 'idx'
+df.stories[df.stories == '2-3'] = 3
+df.stories[df.stories == '2-4'] = 4
+df.stories[df.stories == '3-4'] = 4
+df.stories[df.stories == '1-2'] = 2
+df.stories[df.stories == '4-5'] = 5
+df.stories[df.stories == '5-6'] = 6
+df.stories[df.stories == 40942] = 1
+df.stories[df.stories == 40910] = 1
+df.stories[df.stories == 40943] = 1
+df.stories = df.stories.fillna(1).astype('int32')
+df.zipcode[df.zipcode == '92069-1615'] = 92069
+df.zipcode = df.zipcode.astype('int32')
+df_to_db(df, 'marketpointe', schema = staging)
 

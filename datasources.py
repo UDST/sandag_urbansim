@@ -19,6 +19,8 @@ def households(store):
 @sim.table('buildings', cache=True)
 def buildings(store):
     df = store['buildings']
+    df['res_price_per_sqft'] = 0.0
+    df['nonres_rent_per_sqft'] = 0.0
     return df
     
 @sim.table('parcels', cache=True)
@@ -34,6 +36,15 @@ def building_sqft_per_job(settings):
 @sim.table('costar', cache=True)
 def costar(store):
     df = store['costar']
+    return df
+    
+# residential price data
+@sim.table('assessor_transactions', cache=True)
+def assessor_transactions(store):
+    df = store['assessor_transactions']
+    df["index"] = df.index
+    df.drop_duplicates(cols='index', take_last=True, inplace=True)
+    del df["index"]
     return df
 
 # luz price from pecas
@@ -53,3 +64,5 @@ def pecas_prices(store):
 # this specifies the relationships between tables
 sim.broadcast('nodes', 'costar', cast_index=True, onto_on='node_id')
 sim.broadcast('parcels', 'costar', cast_index=True, onto_on='parcel_id')
+sim.broadcast('nodes', 'assessor_transactions', cast_index=True, onto_on='node_id')
+sim.broadcast('parcels', 'assessor_transactions', cast_index=True, onto_on='parcel_id')

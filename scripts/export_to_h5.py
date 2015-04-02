@@ -16,9 +16,10 @@ households = db_to_df('select * from households').set_index('household_id')
 buildings = db_to_df('select * from buildings').set_index('building_id')
 hh_controls = db_to_df('select year, activity_id, luz_id, total_number_of_households from annual_household_control_totals')
 pecas_prices = db_to_df('select year, luz_id, development_type_id, price from pecas_prices')
+assessor_transactions = db_to_df('select * from assessor_transactions').set_index('building_id')
 
 # Remove uneccesary id columns appended by spandex
-for df in [buildings, jobs, households]:
+for df in [buildings, jobs, households, assessor_transactions]:
     if 'id' in df.columns:
         del df['id']
 
@@ -47,5 +48,6 @@ store['jobs'] = jobs
 store['costar'] = costar
 store['annual_household_control_totals'] = hh_controls
 store['pecas_prices'] = pecas_prices
+store['assessor_transactions'] = assessor_transactions
 
 store.close()

@@ -189,6 +189,44 @@ variable_definitions:
     decay: flat
     apply: np.log1p
     
+  - name: ave_age_of_head_1500m
+    dataframe: households
+    varname: age_of_head
+    radius: 1500
+    aggregation: average
+    decay: flat
+    apply: np.log1p
+    
+  - name: ave_cars_1500m
+    dataframe: households
+    varname: cars
+    radius: 1500
+    aggregation: average
+    decay: flat
+    
+  - name: ave_children_1500m
+    dataframe: households
+    varname: children
+    radius: 1500
+    aggregation: average
+    decay: flat
+    
+  - name: ave_year_built_1500m
+    dataframe: buildings
+    varname: year_built
+    radius: 1500
+    aggregation: average
+    decay: flat
+    apply: np.log1p
+    
+  - name: ave_sqft_per_unit_1500m
+    dataframe: buildings
+    varname: sqft_per_unit
+    radius: 1500
+    aggregation: average
+    decay: flat
+    apply: np.log1p
+    
   - name: population_400m
     dataframe: households
     varname: persons
@@ -231,4 +269,23 @@ variable_definitions:
   - name: jobs_3000m
     dataframe: jobs
     radius: 3000
+    decay: flat
+    
+  - name: households_3000m
+    dataframe: households
+    radius: 3000
+    decay: flat
+    
+  - name: residential_units_3000m
+    dataframe: buildings
+    varname: residential_units
+    radius: 3000
+    aggregation: sum
+    decay: flat
+    
+  - name: residential_units_1500m
+    dataframe: buildings
+    varname: residential_units
+    radius: 1500
+    aggregation: sum
     decay: flat
