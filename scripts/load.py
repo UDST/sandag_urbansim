@@ -92,6 +92,12 @@ csvs = {
     'assessor_transactions':
     'price/parcelTransactions.csv',
     
+    'fee_schedule':
+    'proformaInputs/fees/fee_schedule.csv',
+
+    'parcel_fee_schedule':
+    'proformaInputs/fees/parcel_fee_schedule.csv',
+    
 }
 
 for tbl in csvs.iterkeys():

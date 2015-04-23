@@ -224,3 +224,15 @@ del transactions_joined['oc_doc_date']
 del transactions_joined['oc_price']
 
 df_to_db(transactions_joined, 'assessor_transactions', schema=loader.tables.public)
+
+## Zoning
+zoning = db_to_df('select * from staging.zoning')
+zoning_allowed_uses = db_to_df('select zoning_allowed_uses_id as zoning_id, development_type_id from staging.zoning_allowed_uses')
+
+del zoning['index']
+del zoning['id']
+zoning = zoning.set_index('zoning_id')
+zoning_allowed_uses.index.name = 'idx'
+
+df_to_db(zoning_allowed_uses, 'zoning_allowed_uses', schema=loader.tables.public)
+df_to_db(zoning, 'zoning', schema=loader.tables.public)

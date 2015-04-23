@@ -88,22 +88,20 @@ scenario_inputs:
 # developer model should account for the differences
 form_to_btype:
   residential:
-    - 1
+    - 19
+    - 20
+    - 21
+  industrial:
     - 2
     - 3
-  industrial:
-    - 7
-    - 8
-    - 9
   retail:
-    - 10
-    - 11
+    - 5
   office:
     - 4
   mixedresidential:
-    - 12
+    - 1
   mixedoffice:
-    - 14
+    - 6
 
 
 building_sqft_per_job:
@@ -127,10 +125,10 @@ building_sqft_per_job:
 # basically just reduces dimensionality
 building_type_map:
   1: Other
-  2: Other
-  3: Other
-  4: Other
-  5: Other
+  2: Industrial
+  3: Industrial
+  4: Office
+  5: Retail
   6: Other
   7: Other
   8: Other

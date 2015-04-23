@@ -156,6 +156,10 @@ def res_occupancy_3000m(nodes):
 # BUILDINGS VARIABLES
 #####################
 
+@sim.column('buildings', 'is_office')
+def is_office(buildings):
+    return (buildings.development_type_id == 4).astype('int')
+
 @sim.column('buildings', 'job_spaces')
 def job_spaces(parcels, buildings):
     return np.round(buildings.non_residential_sqft / 200.0)
@@ -200,10 +204,6 @@ def sqft_per_unit(buildings):
     sqft_per_unit = pd.Series(np.zeros(len(buildings))*1.0, index = buildings.index)
     sqft_per_unit[buildings.residential_units > 0] = buildings.residential_sqft[buildings.residential_units > 0] / buildings.residential_units[buildings.residential_units > 0]
     return sqft_per_unit
-    
-@sim.column('parcels', 'parcel_size')
-def parcel_size(parcels):
-    return np.zeros(len(parcels))
     
 @sim.column('buildings', 'building_type_id')
 def building_type_id(buildings):
@@ -253,6 +253,7 @@ def year_built_1970to1980(buildings):
 def year_built_1980to1990(buildings):
     return (buildings.year_built >= 1980) & (buildings.year_built < 1990)
     
+    
 #####################
 # HOUSEHOLD VARIABLES
 #####################
@@ -271,3 +272,113 @@ def activity_id(households):
     idx_43 = (households.income >= 150000) & (households.persons >= 3)
     return 38*idx_38 + 39*idx_39 + 40*idx_40 + 41*idx_41 + 42*idx_42 + 43*idx_43
     
+#####################
+# PARCEL VARIABLES
+#####################
+# these are actually functions that take parameters, but are parcel-related
+# so are defined here
+
+# @sim.injectable('parcel_is_allowed_func', autocall=False)
+# def parcel_is_allowed(form):
+    # settings = sim.settings
+    # form_to_btype = settings["form_to_btype"]
+    #### we have zoning by building type but want
+    #### to know if specific forms are allowed
+    # allowed = [sim.get_table('zoning_baseline')
+               # ['type%d' % typ] == 't' for typ in form_to_btype[form]]
+    # return pd.concat(allowed, axis=1).max(axis=1).\
+        # reindex(sim.get_table('parcels').index).fillna(False)
+        
+@sim.column('parcels', 'parcel_size')
+def parcel_size(parcels):
+    return parcels.parcel_acres * 43560
+    
+@sim.column('parcels', 'proportion_developable')
+def proportion_developable(parcels):
+    return 1.0 - parcels.proportion_undevelopable
+    
+@sim.injectable('parcel_is_allowed_func', autocall=False)
+def parcel_is_allowed(form):
+    parcels = sim.get_table('parcels')
+    zoning_allowed_uses = sim.get_table('zoning_allowed_uses').to_frame()
+    
+    if form == 'sf_detached':
+        allowed = zoning_allowed_uses[19]
+    elif form == 'sf_attached':
+        allowed = zoning_allowed_uses[20]
+    elif form == 'mf_residential':
+        allowed = zoning_allowed_uses[21]
+    elif form == 'light_industrial':
+        allowed = zoning_allowed_uses[2]
+    elif form == 'heavy_industrial':
+        allowed = zoning_allowed_uses[3]
+    elif form == 'office':
+        allowed = zoning_allowed_uses[4]
+    elif form == 'retail':
+        allowed = zoning_allowed_uses[5]
+    else:
+        df = pd.DataFrame(index=parcels.index)
+        df['allowed'] = True
+        allowed = df.allowed
+        
+    return allowed
+    
+@sim.injectable('parcel_sales_price_sqft_func', autocall=False)
+def parcel_sales_price_sqft(use):
+    s = parcel_average_price(use)
+    if use == "residential": s *= 1.2
+    return s
+    
+@sim.injectable('parcel_average_price', autocall=False)
+def parcel_average_price(use):
+    return misc.reindex(sim.get_table('nodes')[use],
+                        sim.get_table('parcels').node_id)
+                        
+@sim.column('parcels', 'max_dua', cache=True)
+def max_dua(parcels, zoning):
+    sr = misc.reindex(zoning.max_dua, parcels.zoning_id)
+    sr = sr*parcels.proportion_developable
+    df = pd.DataFrame({'max_dua':sr.values}, index = sr.index.values)
+    df['index'] = df.index.values
+    df = df.drop_duplicates()
+    del df['index']
+    df.index.name = 'parcel_id'
+    return df.max_dua
+    
+@sim.column('parcels', 'max_far', cache=True)
+def max_far(parcels, zoning):
+    sr = misc.reindex(zoning.max_far, parcels.zoning_id)
+    sr = sr*parcels.proportion_developable
+    df = pd.DataFrame({'max_far':sr.values}, index = sr.index.values)
+    df['index'] = df.index.values
+    df = df.drop_duplicates()
+    del df['index']
+    df.index.name = 'parcel_id'
+    return df.max_far
+    
+##Placeholder-  building height currently unconstrained (very high limit-  1000 ft.)
+@sim.column('parcels', 'max_height', cache=True)
+def max_height(parcels):
+    return pd.Series(np.ones(len(parcels))*1000.0, index = parcels.index)
+    
+    
+@sim.column('parcels', 'total_sqft', cache=True)
+def total_sqft(parcels, buildings):
+    return buildings.building_sqft.groupby(buildings.parcel_id).sum().\
+        reindex(parcels.index).fillna(0)
+    
+
+@sim.column('parcels', 'building_purchase_price_sqft')
+def building_purchase_price_sqft():
+    return parcel_average_price("residential") * .81
+
+
+@sim.column('parcels', 'building_purchase_price')
+def building_purchase_price(parcels):
+    return (parcels.total_sqft * parcels.building_purchase_price_sqft).\
+        reindex(parcels.index).fillna(0)
+
+## Next step:  run sqft proforma separately for each development type, and for each dev type account for the relevant fees in the cost per sqft variable in sqftproforma.  Actually, the relevant place is going to be in the the building_purchase_price_sqft variable (subtract fees here)
+@sim.column('parcels', 'land_cost')
+def land_cost(parcels):
+    return parcels.building_purchase_price + parcels.parcel_acres * 43560 * 12.21

@@ -9,7 +9,39 @@ import urbansim.sim.simulation as sim
 @sim.table('jobs', cache=True)
 def jobs(store):
     df = store['jobs']
+    df = df[df.building_id > 0]
     return df
+    
+@sim.table('fee_schedule', cache=True)
+def fee_schedule(store):
+    df = store['fee_schedule']
+    return df
+    
+@sim.table('parcel_fee_schedule', cache=True)
+def parcel_fee_schedule(store):
+    df = store['parcel_fee_schedule']
+    return df
+    
+@sim.table('zoning', cache=True)
+def zoning(store):
+    df = store['zoning']
+    return df
+    
+@sim.table('zoning_allowed_uses', cache=True)
+def zoning_allowed_uses(store, parcels):
+    parcels_allowed = store['zoning_allowed_uses']
+    parcels = sim.get_table('parcels').to_frame(columns = ['zoning_id',])
+    
+    allowed_df = pd.DataFrame(index = parcels.index)
+    for devtype in np.unique(parcels_allowed.development_type_id):
+        devtype_allowed = parcels_allowed[parcels_allowed.development_type_id == devtype].set_index('zoning_id')
+        allowed = misc.reindex(devtype_allowed.development_type_id, parcels.zoning_id)
+        df = pd.DataFrame(index=allowed.index)
+        df['allowed'] = False
+        df[~allowed.isnull()] = True
+        allowed_df[devtype] = df.allowed
+
+    return allowed_df
     
 @sim.table('households', cache=True)
 def households(store):
