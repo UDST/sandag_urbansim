@@ -27,15 +27,19 @@ def build_networks(parcels):
     sim.add_table("parcels", p)
 
 @sim.model('households_transition')
-def households_transition(households, persons, annual_household_control_totals, year):
+def households_transition(households, annual_household_control_totals, year):
     ct = annual_household_control_totals.to_frame()
     tran = transition.TabularTotalsTransition(ct, 'total_number_of_households')
     model = transition.TransitionModel(tran)
-    hh = households.to_frame(households.local_columns)
-    new, added_hh_idx = \
+    hh = households.to_frame(households.local_columns + ['activity_id', 'luz_id'])
+    new, added_hh_idx, empty_dict = \
         model.transition(hh, year,)
     new.loc[added_hh_idx, "building_id"] = -1
     sim.add_table("households", new)
+    
+@sim.model('jobs_transition')
+def jobs_transition(jobs):
+    return utils.simple_transition(jobs, .05, "building_id")
     
 @sim.model('nrh_estimate2')
 def nrh_estimate2(costar, aggregations):
@@ -218,9 +222,12 @@ def residential_developer(parcels):
         if residential_form in targets.keys():
             old_buildings = sim.get_table('buildings').to_frame(sim.get_table('buildings').local_columns)
             
+            target = targets[residential_form]
+            print 'Residential unit target for %s is %s.' % (residential_form, target)
+            
             print residential_form
             new_buildings = dev.pick(residential_form,
-                                     targets[residential_form],
+                                     target,
                                      parcels.parcel_size,
                                      parcels.ave_sqft_per_unit,
                                      parcels.total_residential_units,
@@ -230,7 +237,7 @@ def residential_developer(parcels):
                                      residential=True,
                                      bldg_sqft_per_job=400.0)
 
-            print new_buildings.residential_units.sum()
+            print 'Constructed %s %s buildings, totaling %s new residential_units' % (len(new_buildings), residential_form, new_buildings.residential_units.sum())
             
             new_buildings["year_built"] = year
             new_buildings["stories"] = new_buildings.stories.apply(np.ceil)
@@ -247,3 +254,81 @@ def residential_developer(parcels):
             new_buildings = new_buildings[old_buildings.columns]
             all_buildings = dev.merge(old_buildings, new_buildings)
             sim.add_table("buildings", all_buildings)
+            
+@sim.model('non_residential_developer')
+def non_residential_developer(parcels):
+    feas = sim.get_table('feasibility').to_frame()
+    dev = developer.Developer(feas)
+    parcels = sim.get_table('parcels')
+    
+    print "{:,} feasible buildings before running developer".format(
+              len(dev.feasibility))
+    
+    defm_nonres_controls = pd.read_csv('data/non_res_space_control.csv')
+    
+    year = sim.get_injectable('year')
+    if year is None:
+        year = 2012
+        
+    defm_nonres_controls = defm_nonres_controls[defm_nonres_controls.yr == year]
+    buildings = sim.get_table('buildings').to_frame(columns = ['development_type_id', 'non_residential_sqft'])
+    
+    light_industrial_sqft = buildings[buildings.development_type_id == 2].non_residential_sqft.sum()
+    heavy_industrial_sqft = buildings[buildings.development_type_id == 3].non_residential_sqft.sum()
+    office_sqft = buildings[buildings.development_type_id == 4].non_residential_sqft.sum()
+    retail_sqft = buildings[buildings.development_type_id == 5].non_residential_sqft.sum()
+    
+    vacancy_multiplier = 1.7
+    light_industrial_target = defm_nonres_controls[defm_nonres_controls.development_type_id == 2].total_min_sqft.values[0] * vacancy_multiplier
+    heavy_industrial_target = defm_nonres_controls[defm_nonres_controls.development_type_id == 3].total_min_sqft.values[0] * vacancy_multiplier
+    office_target = defm_nonres_controls[defm_nonres_controls.development_type_id == 4].total_min_sqft.values[0] * vacancy_multiplier
+    retail_target = defm_nonres_controls[defm_nonres_controls.development_type_id == 5].total_min_sqft.values[0] * vacancy_multiplier
+    
+    light_industrial_difference = light_industrial_target - light_industrial_sqft
+    heavy_industrial_difference = heavy_industrial_target - heavy_industrial_sqft
+    office_difference = office_target - office_sqft
+    retail_difference = retail_target - retail_sqft
+    
+    targets = {'light_industrial':light_industrial_difference, 'heavy_industrial':heavy_industrial_difference,
+           'office':office_difference, 'retail':retail_difference}
+           
+    for non_residential_form in ['heavy_industrial', 'light_industrial', 'retail', 'office']:
+        if non_residential_form in targets.keys():
+            old_buildings = sim.get_table('buildings').to_frame(sim.get_table('buildings').local_columns)
+
+            target = targets[non_residential_form]
+            target = target/400
+            print 'Job space target for %s is %s.' % (non_residential_form, target)
+            
+            if target > 0:
+                new_buildings = dev.pick(non_residential_form,
+                                         target,
+                                         parcels.parcel_size,
+                                         parcels.ave_sqft_per_unit,
+                                         parcels.total_job_spaces,
+                                         max_parcel_size=2000000,
+                                         min_unit_size=0,
+                                         drop_after_build=True,
+                                         residential=False,
+                                         bldg_sqft_per_job=400.0)
+                
+                print 'Constructed %s %s buildings, totaling %s new job spaces.' % (len(new_buildings), non_residential_form, new_buildings.non_residential_sqft.sum()/400)
+                
+                new_buildings["year_built"] = year
+                new_buildings["stories"] = new_buildings.stories.apply(np.ceil)
+                if non_residential_form == 'light_industrial':
+                    new_buildings['development_type_id'] = 2
+                elif non_residential_form == 'heavy_industrial':
+                    new_buildings['development_type_id'] = 3
+                elif non_residential_form == 'office':
+                    new_buildings['development_type_id'] = 4
+                elif non_residential_form == 'retail':
+                    new_buildings['development_type_id'] = 5
+                new_buildings['improvement_value'] = 0
+                new_buildings['note'] = 'simulated'
+                new_buildings['res_price_per_sqft'] = 0.0
+                new_buildings['nonres_rent_per_sqft'] = 0.0
+                new_buildings = new_buildings[old_buildings.columns]
+                all_buildings = dev.merge(old_buildings, new_buildings)
+                sim.add_table("buildings", all_buildings)
+    

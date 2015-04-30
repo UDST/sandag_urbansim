@@ -159,6 +159,10 @@ def res_occupancy_3000m(nodes):
 @sim.column('buildings', 'is_office')
 def is_office(buildings):
     return (buildings.development_type_id == 4).astype('int')
+    
+@sim.column('buildings', 'is_retail')
+def is_retail(buildings):
+    return (buildings.development_type_id == 5).astype('int')
 
 @sim.column('buildings', 'job_spaces')
 def job_spaces(parcels, buildings):
@@ -166,6 +170,10 @@ def job_spaces(parcels, buildings):
 
 @sim.column('buildings', 'luz_id')
 def luz_id(buildings, parcels):
+    return misc.reindex(parcels.luz_id, buildings.parcel_id)
+    
+@sim.column('buildings', 'luz_id_buildings')
+def luz_id_buildings(buildings, parcels):
     return misc.reindex(parcels.luz_id, buildings.parcel_id)
     
 @sim.column('buildings', 'pecas_price')
@@ -260,6 +268,10 @@ def year_built_1980to1990(buildings):
 
 @sim.column('households', 'luz_id', cache=True)
 def luz_id(households, buildings):
+    return misc.reindex(buildings.luz_id, households.building_id)
+    
+@sim.column('households', 'luz_id_households', cache=True)
+def luz_id_households(households, buildings):
     return misc.reindex(buildings.luz_id, households.building_id)
     
 @sim.column('households', 'activity_id')

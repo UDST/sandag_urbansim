@@ -46,6 +46,13 @@ def zoning_allowed_uses(store, parcels):
 @sim.table('households', cache=True)
 def households(store):
     df = store['households']
+    df = df[df.building_id > 0]  ##Revisit the allocation and remove GQ from synthetic population?
+    
+    p = store['parcels']
+    b = store['buildings']
+    b['luz'] = misc.reindex(p.luz_id, b.parcel_id)
+    df['base_luz'] = misc.reindex(b.luz, df.building_id)
+    
     return df
     
 @sim.table('buildings', cache=True)
@@ -53,12 +60,27 @@ def buildings(store):
     df = store['buildings']
     df['res_price_per_sqft'] = 0.0
     df['nonres_rent_per_sqft'] = 0.0
+    #df.residential_units = df.residential_units*2  ##For testing HLCM luz supply constraints only
     return df
     
 @sim.table('parcels', cache=True)
 def parcels(store):
     df = store['parcels']
     return df
+    
+@sim.table('annual_household_control_totals', cache=True)
+def annual_household_control_totals():
+    pecas_hh_controls = pd.read_csv('data/pecas_hh_controls.csv')
+    pecas_hh_controls = pecas_hh_controls[pecas_hh_controls.activity_name.isin(['Households less than 25k annual income and 2 or less people',
+                                                                                'Households 25 to 150k annual income and 2 or less people',
+                                                                                'Households 150k or more annual income and 2 or less people',
+                                                                                'Households less than 25k annual income and 3 or more people',
+                                                                                'Households 25 to 150k annual income and 3 or more people',
+                                                                                'Households 150k or more annual income and 3 or more people'])]
+    pecas_hh_controls = pecas_hh_controls.rename(columns = {'yr':'year', 'Total_HH_Controls':'total_number_of_households', 'luz_id':'base_luz'})
+    pecas_hh_controls.total_number_of_households = np.ceil(pecas_hh_controls.total_number_of_households).astype('int32')
+    pecas_hh_controls = pecas_hh_controls[['year', 'activity_id', 'base_luz', 'total_number_of_households']].set_index('year')
+    return pecas_hh_controls
     
 @sim.injectable('building_sqft_per_job', cache=True)
 def building_sqft_per_job(settings):

@@ -1,0 +1,146 @@
+name: hlcm
+
+model_type: segmented_locationchoice
+
+segmentation_col: income_quartile
+
+choosers_fit_filters:
+- building_id > 0
+
+choosers_predict_filters: null
+
+alts_fit_filters: null
+
+alts_predict_filters: null
+
+interaction_predict_filters: null #base_luz == luz_id_buildings
+
+choice_column: null
+
+sample_size: 50
+
+estimation_sample_size: 15000
+
+default_config:
+    model_expression: np.log1p(sqft_per_unit) + year_built + np.log1p(residential_units)
+        + jobs_800m + residential_units_3000m + ave_income
+
+models:
+    &id001 !!python/long '1':
+        fit_parameters:
+            Coefficient:
+                ave_income: -0.1821105431447991
+                jobs_800m: 0.0308867435493355
+                np.log1p(residential_units): 1.246183600087022
+                np.log1p(sqft_per_unit): 0.05426390739531131
+                residential_units_3000m: 2.450549664536915e-05
+                year_built: -0.000516862186006942
+            Std. Error:
+                ave_income: 0.0195921591005037
+                jobs_800m: 0.005288244801527915
+                np.log1p(residential_units): 0.007641730649215947
+                np.log1p(sqft_per_unit): 0.006723062676833834
+                residential_units_3000m: 1.1509922790657045e-06
+                year_built: 0.00011270714452914925
+            T-Score:
+                ave_income: -9.29507269773637
+                jobs_800m: 5.84064178352929
+                np.log1p(residential_units): 163.07609588606505
+                np.log1p(sqft_per_unit): 8.071307676826004
+                residential_units_3000m: 21.290756759255597
+                year_built: -4.58588661939942
+        fitted: true
+        log_likelihoods:
+            convergence: -40963.55265551983
+            'null': -58680.34508140402
+            ratio: 0.3019203858005036
+        name: *id001
+    &id002 !!python/long '2':
+        fit_parameters:
+            Coefficient:
+                ave_income: -0.11174120375451178
+                jobs_800m: 0.013312252525035609
+                np.log1p(residential_units): 1.2220497251864373
+                np.log1p(sqft_per_unit): 0.06252325371363343
+                residential_units_3000m: 1.6613282308274083e-05
+                year_built: -3.073254199517128e-05
+            Std. Error:
+                ave_income: 0.02337878038145751
+                jobs_800m: 0.005208843756829602
+                np.log1p(residential_units): 0.007528100965776469
+                np.log1p(sqft_per_unit): 0.006228690974408037
+                residential_units_3000m: 1.2085998569617187e-06
+                year_built: 0.00013650339260092305
+            T-Score:
+                ave_income: -4.779599360244534
+                jobs_800m: 2.5557020226573663
+                np.log1p(residential_units): 162.33173953723556
+                np.log1p(sqft_per_unit): 10.037944404454183
+                residential_units_3000m: 13.74589134077673
+                year_built: -0.22514123209391548
+        fitted: true
+        log_likelihoods:
+            convergence: -42939.84434014702
+            'null': -58680.34508140402
+            ratio: 0.26824144812749595
+        name: *id002
+    3:
+        fit_parameters:
+            Coefficient:
+                ave_income: 0.16198013396893476
+                jobs_800m: -0.01175595217484132
+                np.log1p(residential_units): 1.2123046470661991
+                np.log1p(sqft_per_unit): 0.060679176431284024
+                residential_units_3000m: 7.220099018324114e-08
+                year_built: 0.00048352629193776706
+            Std. Error:
+                ave_income: 0.032950773032130516
+                jobs_800m: 0.005040864178331168
+                np.log1p(residential_units): 0.00767722478859102
+                np.log1p(sqft_per_unit): 0.006465396324267452
+                residential_units_3000m: 1.3540319303568891e-06
+                year_built: 0.00019270257558963083
+            T-Score:
+                ave_income: 4.91582196906236
+                jobs_800m: -2.332130317134086
+                np.log1p(residential_units): 157.90922897917258
+                np.log1p(sqft_per_unit): 9.385221475677927
+                residential_units_3000m: 0.05332295979475961
+                year_built: 2.5091843762766253
+        fitted: true
+        log_likelihoods:
+            convergence: -44642.10546493896
+            'null': -58680.34508140402
+            ratio: 0.2392323970997542
+        name: 3
+    &id003 !!python/long '4':
+        fit_parameters:
+            Coefficient:
+                ave_income: 1.5087831729362666
+                jobs_800m: -0.0029113578180775543
+                np.log1p(residential_units): 1.2030821387483543
+                np.log1p(sqft_per_unit): 0.05771866386070781
+                residential_units_3000m: 1.5505173180094278e-06
+                year_built: 0.0002854461424901805
+            Std. Error:
+                ave_income: 0.034801639239298604
+                jobs_800m: 0.004980245992131253
+                np.log1p(residential_units): 0.007949910670790521
+                np.log1p(sqft_per_unit): 0.006731104369518425
+                residential_units_3000m: 1.5232371095274018e-06
+                year_built: 0.00020678476139231753
+            T-Score:
+                ave_income: 43.35379614051406
+                jobs_800m: -0.584581127654633
+                np.log1p(residential_units): 151.33278706749576
+                np.log1p(sqft_per_unit): 8.574917382366673
+                residential_units_3000m: 1.0179093644130623
+                year_built: 1.3804022142068026
+        fitted: true
+        log_likelihoods:
+            convergence: -44987.93979570213
+            'null': -58680.34508140402
+            ratio: 0.23333886783908941
+        name: *id003
+
+fitted: true
