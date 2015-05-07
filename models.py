@@ -82,16 +82,69 @@ def feasibility(parcels, settings,
             parcels = parcels.query(parcel_filter)
         # add prices for each use (rents).  Apply fees
         parcels[use] = misc.reindex(sim.get_table('nodes')[use], sim.get_table('parcels').node_id) - fees
-
+        
+        #Calibration shifters
+        calibration_shifters = pd.read_csv('.\\data\\calibration\\msa_shifters.csv').set_index('msa_id').to_dict()
+        shifter_name = 'res_price_shifter'
+        parcels[shifter_name] = 1.0
+        shifters = calibration_shifters[shifter_name]
+        for msa_id in shifters.keys():
+            shift = shifters[msa_id]
+            parcels[shifter_name][parcels.msa_id == msa_id] = shift
+            
+        parcels[use] = parcels[use] * parcels[shifter_name]
+       
         # convert from cost to yearly rent
         if residential_to_yearly:
             parcels[use] *= pf.config.cap_rate
+            
+        # Price minimum if hedonic predicts outlier
+        parcels[use][parcels[use] <= 0] = .25
 
         print "Describe of the yearly rent by use"
         print parcels[use].describe()
         allowed = parcel_use_allowed_callback(form).loc[parcels.index]
         feasibility = pf.lookup(form, parcels[allowed], only_built=True,
                                     pass_through=[])
+                                    
+        if (use == 'residential') and (form != 'sf_attached'):
+
+            def iter_feasibility(feasibility, price_scaling_factor):
+                
+                if price_scaling_factor > 3.0:
+                    return feasibility
+                
+                # Get targets
+                targets = residential_space_targets()
+                target_units = targets[form]
+                
+                #Calculate number of profitable units
+                ave_unit_size = parcels.ave_sqft_per_unit
+                ave_unit_size[ave_unit_size < 400] = 400
+                feasibility["ave_unit_size"] = ave_unit_size
+                feasibility['current_units'] = parcels.total_residential_units
+                feasibility["parcel_size"] = parcels.parcel_size
+                feasibility = feasibility[feasibility.parcel_size < 200000]
+                feasibility['residential_units'] = np.round(feasibility.residential_sqft /
+                                               feasibility.ave_unit_size)
+                feasibility['net_units'] = feasibility.residential_units - feasibility.current_units
+                profitable_units = int(feasibility.net_units.sum())
+                
+                print 'Feasibility given current prices/zonining indicates %s profitable units and target of %s' % (profitable_units, target_units)
+                
+                if profitable_units < target_units:
+                    price_scaling_factor += .1
+                    print 'Scaling prices up by factor of %s' % price_scaling_factor
+                    parcels[use] = parcels[use] * price_scaling_factor
+                    feasibility = pf.lookup(form, parcels[allowed], only_built=True,
+                                        pass_through=[])
+                                        
+                    return iter_feasibility(feasibility, price_scaling_factor)
+                    
+                else:
+                    return feasibility
+                    
+            feasibility = iter_feasibility(feasibility, 1.0)
 
         print len(feasibility)
 
@@ -191,16 +244,8 @@ def feasibility(parcels, settings,
 
     far_predictions = pd.concat(d.values(), keys=d.keys(), axis=1)
     sim.add_table("feasibility", far_predictions)
-
-
-@sim.model('residential_developer')
-def residential_developer(parcels):
-    feas = sim.get_table('feasibility').to_frame()
-    dev = developer.Developer(feas)
-
-    print "{:,} feasible buildings before running developer".format(
-              len(dev.feasibility))
-
+    
+def residential_space_targets():
     defm_resunit_controls = pd.read_csv('data/defm_res_unit_controls.csv')
     buildings = sim.get_table('buildings').to_frame(columns = ['development_type_id', 'residential_units'])
 
@@ -217,6 +262,21 @@ def residential_developer(parcels):
     sf_difference = sf_target - number_sf_units
 
     targets = {'mf_residential':mf_difference, 'sf_detached':sf_difference}
+    return targets
+
+@sim.model('residential_developer')
+def residential_developer(parcels):
+    feas = sim.get_table('feasibility').to_frame()
+    dev = developer.Developer(feas)
+    
+    year = sim.get_injectable('year')
+    if year is None:
+        year = 2012
+
+    print "{:,} feasible buildings before running developer".format(
+              len(dev.feasibility))
+              
+    targets = residential_space_targets()
 
     for residential_form in ['sf_detached', 'sf_attached', 'mf_residential']:
         if residential_form in targets.keys():
@@ -238,7 +298,8 @@ def residential_developer(parcels):
                                      bldg_sqft_per_job=400.0)
 
             print 'Constructed %s %s buildings, totaling %s new residential_units' % (len(new_buildings), residential_form, new_buildings.residential_units.sum())
-            
+            print 'Overshot target by %s units!' % (new_buildings.residential_units.sum() - target)
+            print 'Biggest building has %s units' % new_buildings.residential_units.max()
             new_buildings["year_built"] = year
             new_buildings["stories"] = new_buildings.stories.apply(np.ceil)
             if residential_form == 'sf_detached':
@@ -254,6 +315,13 @@ def residential_developer(parcels):
             new_buildings = new_buildings[old_buildings.columns]
             all_buildings = dev.merge(old_buildings, new_buildings)
             sim.add_table("buildings", all_buildings)
+            
+    sim.add_table("feasibility", dev.feasibility)
+    b = sim.get_table('buildings')
+    b = b.to_frame(b.local_columns)
+    b_sim = b[(b.note == 'simulated') * (b.year_built == year)]
+    print 'Simulated DU: %s' % b_sim.residential_units.sum()
+    print 'Target DU: %s' % (targets['sf_detached'] + targets['mf_residential'])
             
 @sim.model('non_residential_developer')
 def non_residential_developer(parcels):
@@ -331,4 +399,6 @@ def non_residential_developer(parcels):
                 new_buildings = new_buildings[old_buildings.columns]
                 all_buildings = dev.merge(old_buildings, new_buildings)
                 sim.add_table("buildings", all_buildings)
+                
+    sim.add_table("feasibility", dev.feasibility)
     
