@@ -62,3 +62,9 @@ store['fee_schedule'] = fee_schedule
 store['parcel_fee_schedule'] = parcel_fee_schedule
 
 store.close()
+
+
+#Scheduled development events
+sched_dev = db_to_df('select * from scheduled_development_events').set_index('scheduled_development_event_id')
+del sched_dev['id']
+sched_dev.to_csv('../data/scheduled_development_events.csv')

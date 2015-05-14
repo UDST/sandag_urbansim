@@ -195,9 +195,13 @@ def node_id(parcels, buildings):
 def mgra_id(parcels, buildings):
     return misc.reindex(parcels.mgra_id, buildings.parcel_id)
     
-@sim.column('buildings', 'zone_id')
+@sim.column('buildings', 'zone_id', cache=True)
 def zone_id(buildings):
     return np.zeros(len(buildings))
+    
+@sim.column('buildings', 'msa_id', cache=True)
+def msa_id(buildings, parcels):
+    return misc.reindex(parcels.msa_id, buildings.parcel_id)
     
 @sim.column('buildings', 'parcel_size')
 def parcel_size(buildings):
@@ -212,6 +216,11 @@ def sqft_per_unit(buildings):
     sqft_per_unit = pd.Series(np.zeros(len(buildings))*1.0, index = buildings.index)
     sqft_per_unit[buildings.residential_units > 0] = buildings.residential_sqft[buildings.residential_units > 0] / buildings.residential_units[buildings.residential_units > 0]
     return sqft_per_unit
+    
+@sim.column('buildings', 'vacant_residential_units')
+def vacant_residential_units(buildings, households):
+    return buildings.residential_units.sub(
+        households.building_id.value_counts(), fill_value=0)
     
 @sim.column('buildings', 'building_type_id')
 def building_type_id(buildings):
@@ -270,6 +279,10 @@ def year_built_1980to1990(buildings):
 def luz_id(households, buildings):
     return misc.reindex(buildings.luz_id, households.building_id)
     
+@sim.column('households', 'mgra_id', cache=True)
+def mgra_id(households, buildings):
+    return misc.reindex(buildings.mgra_id, households.building_id)
+    
 @sim.column('households', 'luz_id_households', cache=True)
 def luz_id_households(households, buildings):
     return misc.reindex(buildings.luz_id, households.building_id)
@@ -283,6 +296,13 @@ def activity_id(households):
     idx_42 = (households.income >= 150000) & (households.persons < 3)
     idx_43 = (households.income >= 150000) & (households.persons >= 3)
     return 38*idx_38 + 39*idx_39 + 40*idx_40 + 41*idx_41 + 42*idx_42 + 43*idx_43
+    
+@sim.column('households', 'income_halves', cache=True)
+def income_halves(households):
+    s = pd.Series(pd.qcut(households.income, 2, labels=False),
+                  index=households.index)
+    s = s.add(1)
+    return s
     
 #####################
 # PARCEL VARIABLES
@@ -394,3 +414,21 @@ def building_purchase_price(parcels):
 @sim.column('parcels', 'land_cost')
 def land_cost(parcels):
     return parcels.building_purchase_price + parcels.parcel_acres * 43560 * 12.21
+    
+@sim.column('parcels', 'total_sfd_du', cache=False)
+def total_sfd_du(parcels, buildings):
+    buildings = buildings.to_frame(buildings.local_columns)
+    return buildings[buildings.development_type_id == 19].residential_units.groupby(buildings.parcel_id).sum().\
+        reindex(parcels.index).fillna(0)
+        
+@sim.column('parcels', 'total_sfa_du', cache=False)
+def total_sfa_du(parcels, buildings):
+    buildings = buildings.to_frame(buildings.local_columns)
+    return buildings[buildings.development_type_id == 20].residential_units.groupby(buildings.parcel_id).sum().\
+        reindex(parcels.index).fillna(0)
+        
+@sim.column('parcels', 'total_mfr_du', cache=False)
+def total_mfr_du(parcels, buildings):
+    buildings = buildings.to_frame(buildings.local_columns)
+    return buildings[buildings.development_type_id == 21].residential_units.groupby(buildings.parcel_id).sum().\
+        reindex(parcels.index).fillna(0)

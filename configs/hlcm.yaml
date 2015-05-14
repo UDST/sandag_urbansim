@@ -5,15 +5,15 @@ model_type: segmented_locationchoice
 segmentation_col: income_quartile
 
 choosers_fit_filters:
-- building_id > 0
-
-choosers_predict_filters: null
-
+- building_id > 0
+choosers_predict_filters: 
+- base_luz != 105
+- income_quartile == 4
 alts_fit_filters: null
 
 alts_predict_filters: null
 
-interaction_predict_filters: null #base_luz == luz_id_buildings
+interaction_predict_filters: base_luz == luz_id_buildings #null #base_luz == luz_id_buildings
 
 choice_column: null
 

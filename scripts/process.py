@@ -225,6 +225,7 @@ del transactions_joined['oc_price']
 
 df_to_db(transactions_joined, 'assessor_transactions', schema=loader.tables.public)
 
+
 ## Zoning
 zoning = db_to_df('select * from staging.zoning')
 zoning_allowed_uses = db_to_df('select zoning_allowed_uses_id as zoning_id, development_type_id from staging.zoning_allowed_uses')
@@ -236,3 +237,21 @@ zoning_allowed_uses.index.name = 'idx'
 
 df_to_db(zoning_allowed_uses, 'zoning_allowed_uses', schema=loader.tables.public)
 df_to_db(zoning, 'zoning', schema=loader.tables.public)
+
+
+# Scheduled development events
+site_spec = db_to_df('select * from staging.sitespec;')
+site_spec = site_spec.rename(columns = {'placetype':'development_type_id', 'nonres_sqf':'non_residential_sqft',
+                            'res_unit':'residential_units', 'sqft_prunt':'sqft_per_unit', 
+                            'avg_story':'stories', 'phase':'year_built'})
+site_spec['note'] = 'Sitespec ' + site_spec.siteid.astype('str') + '. ' + site_spec.source + ": " + site_spec.sitename
+site_spec = site_spec[['year_built', 'development_type_id', 'stories',
+                       'non_residential_sqft', 'sqft_per_unit', 'residential_units', 'parcel_id', 'note']]
+site_spec['improvement_value'] = 0
+site_spec['res_price_per_sqft'] = 0.0
+site_spec['nonres_rent_per_sqft'] = 0.0
+site_spec.stories[site_spec.stories < 1] = 1
+site_spec.sqft_per_unit[(site_spec.residential_units > 0) & (site_spec.sqft_per_unit < 1)] = 1500
+site_spec.index.name = 'scheduled_development_event_id'
+
+df_to_db(site_spec, 'scheduled_development_events', schema=loader.tables.public)

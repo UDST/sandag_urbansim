@@ -46,6 +46,8 @@ conform_srids(loader.srid, schema=staging, fix=True)
 
 # Tag parcels with a block_id
 tag(t.staging.parcels, 'block_geoid', t.staging.blocks, 'geoid10')
+# Tag sitespec with a parcel_id
+tag(t.staging.sitespec, 'parcel_id', t.staging.parcels, 'parcel_id')
 
 
 # Load csv's
