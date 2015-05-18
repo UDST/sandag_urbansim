@@ -66,6 +66,7 @@ def buildings(store):
 @sim.table('parcels', cache=True)
 def parcels(store):
     df = store['parcels']
+    df['acres'] = df.parcel_acres
     return df
     
 @sim.table('annual_household_control_totals', cache=True)

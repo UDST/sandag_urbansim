@@ -526,9 +526,12 @@ def residential_developer(parcels):
             run_developer(dev, residential_form, target)
 
     #Remaining feasible parcels back to feas after running controlled LUZs so that nonres can be built on these parcels if multiple forms allowed and not already built on
-    feas_list = mini_feases.append(dev.feasibility)
-    feas = pd.concat(mini_feases)
-    sim.add_table("feasibility", feas)
+    if len(overrides) > 0:
+        feas_list = mini_feases.append(dev.feasibility)
+        feas = pd.concat(mini_feases)
+        sim.add_table("feasibility", feas)
+    else:
+        sim.add_table("feasibility", dev.feasibility)
     
     b = sim.get_table('buildings')
     b = b.to_frame(b.local_columns)

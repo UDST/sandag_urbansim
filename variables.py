@@ -321,6 +321,10 @@ def income_halves(households):
     # return pd.concat(allowed, axis=1).max(axis=1).\
         # reindex(sim.get_table('parcels').index).fillna(False)
         
+@sim.column('parcels', 'parcel_acres')
+def parcel_acres(parcels):
+    return parcels.acres
+        
 @sim.column('parcels', 'parcel_size')
 def parcel_size(parcels):
     return parcels.parcel_acres * 43560
