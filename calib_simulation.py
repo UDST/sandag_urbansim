@@ -5,8 +5,19 @@ import urbansim.sim.simulation as sim
 np.random.seed(1)
 
 # Simulation run
-sim.run(["build_networks", "neighborhood_vars", "rsh_simulate", "nrh_simulate", "nrh_simulate2", 
-         "price_vars", "feasibility", "residential_developer", "non_residential_developer"])
+
+##Single-year
+# sim.run(["build_networks", "neighborhood_vars", "rsh_simulate", "nrh_simulate", "nrh_simulate2", 
+         # "price_vars", "feasibility", "residential_developer", "non_residential_developer"])
+         
+##Multi-year
+sim.run(["build_networks"]) #initialize network accessibility engine
+sim.run(["neighborhood_vars", #"scheduled_development_events", #scheduled events and accessibility variables
+         "rsh_simulate", "nrh_simulate", "nrh_simulate2",   #price models
+         "jobs_transition", "elcm_simulate", "households_transition", "hlcm_luz_simulate", #demand/location models
+         "price_vars", "feasibility", "residential_developer", "non_residential_developer", #supply/proforma models
+         "model_integration_indicators" #indicators for pasef/pecas
+         ], years=[2013, 2014, 2015,])
 
 # Summarize results at MSA level
 b = sim.get_table('buildings').to_frame(columns = ['msa_id', 'mgra_id', 'residential_units', 'non_residential_sqft', 'note'])
