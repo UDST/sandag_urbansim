@@ -52,6 +52,7 @@ def households(store):
     b = store['buildings']
     b['luz'] = misc.reindex(p.luz_id, b.parcel_id)
     df['base_luz'] = misc.reindex(b.luz, df.building_id)
+    df['segmentation_col'] = 1
     
     return df
     

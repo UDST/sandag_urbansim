@@ -1,0 +1,69 @@
+name: hlcm
+
+model_type: segmented_locationchoice
+
+segmentation_col: income_halves
+
+choosers_fit_filters:
+- building_id > 0
+
+choosers_predict_filters: null
+
+alts_fit_filters: null
+
+alts_predict_filters: null
+
+interaction_predict_filters: null
+
+choice_column: null
+
+sample_size: 50
+
+estimation_sample_size: 15000
+
+default_config:
+    model_expression: np.log1p(sqft_per_unit) + year_built + np.log1p(residential_units)
+
+models:
+    &id001 !!python/long '1':
+        fit_parameters:
+            Coefficient:
+                np.log1p(residential_units): 1.2659295102583588
+                np.log1p(sqft_per_unit): 0.03145956701229331
+                year_built: -0.0008115793293384525
+            Std. Error:
+                np.log1p(residential_units): 0.006981044975914164
+                np.log1p(sqft_per_unit): 0.006444557008753814
+                year_built: 2.5960024037907568e-05
+            T-Score:
+                np.log1p(residential_units): 181.3381112177387
+                np.log1p(sqft_per_unit): 4.881571684378142
+                year_built: -31.262657082033563
+        fitted: true
+        log_likelihoods:
+            convergence: -42698.86512599247
+            'null': -58680.34508140402
+            ratio: 0.27234809088530954
+        name: *id001
+    &id002 !!python/long '2':
+        fit_parameters:
+            Coefficient:
+                np.log1p(residential_units): 1.1613659781530086
+                np.log1p(sqft_per_unit): 0.06937739980248772
+                year_built: 0.0037982096795487136
+            Std. Error:
+                np.log1p(residential_units): 0.007127048614483822
+                np.log1p(sqft_per_unit): 0.006279206169185383
+                year_built: 2.5470607476335238e-05
+            T-Score:
+                np.log1p(residential_units): 162.95188106235764
+                np.log1p(sqft_per_unit): 11.048753287151301
+                year_built: 149.12128354526422
+        fitted: true
+        log_likelihoods:
+            convergence: -45774.62682003034
+            'null': -58680.34508140402
+            ratio: 0.2199325556703916
+        name: *id002
+
+fitted: true

@@ -8,14 +8,6 @@ node_col: node_id
 
 variable_definitions:
 
-  - name: ave_parcel_size
-    dataframe: parcels
-    varname: parcel_acres
-    radius: 800
-    aggregation: average
-    decay: flat
-    apply: np.log1p
-
   - name: mean_nonres_rent_2000m
     aggregation: average
     dataframe: buildings
@@ -24,6 +16,16 @@ variable_definitions:
     - non_residential_sqft > 0
     radius: 2000
     varname: nonres_rent_per_sqft
+
+  - name: households_1500m
+    dataframe: households
+    radius: 1500
+    apply: np.log1p
+    
+  - name: jobs_3000m
+    dataframe: jobs
+    radius: 3000
+    apply: np.log1p
 
   - name: jobs_1500m
     dataframe: jobs
@@ -179,6 +181,14 @@ variable_definitions:
     - sector_id == 20
     radius: 1200
     apply: np.log1p
+    
+  - name: ave_parcel_size
+    dataframe: parcels
+    varname: parcel_acres
+    radius: 800
+    aggregation: average
+    decay: flat
+    apply: np.log1p
 
   - name: ave_income
     dataframe: households
@@ -196,6 +206,13 @@ variable_definitions:
     decay: flat
     apply: np.log1p
     
+  - name: ave_cars_1500m
+    dataframe: households
+    varname: cars
+    radius: 1500
+    aggregation: average
+    decay: flat
+    
   - name: ave_children_1500m
     dataframe: households
     varname: children
@@ -211,10 +228,42 @@ variable_definitions:
     decay: flat
     apply: np.log1p
     
+  - name: ave_sqft_per_unit_1500m
+    dataframe: buildings
+    varname: sqft_per_unit
+    radius: 1500
+    aggregation: average
+    decay: flat
+    apply: np.log1p
+    
   - name: population_400m
     dataframe: households
     varname: persons
     radius: 400
+    aggregation: sum
+    decay: flat
+    apply: np.log1p
+    
+  - name: population_800m
+    dataframe: households
+    varname: persons
+    radius: 800
+    aggregation: sum
+    decay: flat
+    apply: np.log1p
+    
+  - name: population_1500m
+    dataframe: households
+    varname: persons
+    radius: 1500
+    aggregation: sum
+    decay: flat
+    apply: np.log1p
+    
+  - name: population_3000m
+    dataframe: households
+    varname: persons
+    radius: 3000
     aggregation: sum
     decay: flat
     apply: np.log1p

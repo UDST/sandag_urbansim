@@ -25,6 +25,18 @@ def build_networks(parcels):
     p = parcels.to_frame(parcels.local_columns)
     p['node_id'] = net.get_node_ids(p['x'], p['y'])
     sim.add_table("parcels", p)
+    
+@sim.model('elcm_basic_estimate')
+def elcm_basic_estimate(jobs, buildings, aggregations):
+    return utils.lcm_estimate("elcm_basic.yaml", jobs, "building_id",
+                              buildings, aggregations)
+
+
+@sim.model('elcm_basic_simulate')
+def elcm_basic_simulate(jobs, buildings, aggregations):
+    return utils.lcm_simulate("elcm_basic.yaml", jobs, buildings, aggregations,
+                              "building_id", "job_spaces",
+                              "vacant_job_spaces")
 
 @sim.model('households_transition')
 def households_transition(households, annual_household_control_totals, year):
@@ -62,6 +74,10 @@ def hlcm_luz_simulate(households, buildings, aggregations):
     additional_columns = [supply_fname, vacant_fname, 'luz_id_buildings']
     locations_df = utils.to_frame(buildings, join_tbls, cfg,
                             additional_columns=additional_columns)
+    buildings_df = buildings.to_frame(columns = [vacant_fname, 'luz_id_buildings'])
+    buildings_df = buildings_df[buildings_df[vacant_fname] > 0]
+    vacant_units_regional = buildings_df[vacant_fname]
+    luz_id_buildings = buildings_df.luz_id_buildings
     
     
     for luz in np.unique(movers.base_luz):
@@ -71,31 +87,30 @@ def hlcm_luz_simulate(households, buildings, aggregations):
         locations_df_luz = locations_df[locations_df.luz_id_buildings == luz]
 
         available_units = buildings[supply_fname][buildings.luz_id_buildings == luz]
-        vacant_units = buildings.to_frame(columns = [vacant_fname])[vacant_fname][buildings.luz_id_buildings == luz]
+        vacant_units = vacant_units_regional[luz_id_buildings == luz]
         
         print "There are %d total available units" % available_units.sum()
         print "    and %d total choosers" % len(movers_luz)
         print "    but there are %d overfull buildings" % \
               len(vacant_units[vacant_units < 0])
 
-        vacant_units = vacant_units[vacant_units > 0]
         
         indexes = np.repeat(vacant_units.index.values,
                             vacant_units.values.astype('int'))
-        isin = pd.Series(indexes).isin(locations_df_luz.index)
-        missing = len(isin[isin == False])
-        indexes = indexes[isin.values]
+        # isin = pd.Series(indexes).isin(locations_df_luz.index)
+        # missing = len(isin[isin == False])
+        # indexes = indexes[isin.values]
         units = locations_df_luz.loc[indexes].reset_index()
         utils.check_nas(units)
 
         print "    for a total of %d temporarily empty units" % vacant_units.sum()
         print "    in %d buildings total in the region" % len(vacant_units)
 
-        if missing > 0:
-            print "WARNING: %d indexes aren't found in the locations df -" % \
-                missing
-            print "    this is usually because of a few records that don't join "
-            print "    correctly between the locations df and the aggregations tables"
+        # if missing > 0:
+            # print "WARNING: %d indexes aren't found in the locations df -" % \
+                # missing
+            # print "    this is usually because of a few records that don't join "
+            # print "    correctly between the locations df and the aggregations tables"
 
         
         if len(movers_luz) > vacant_units.sum():
@@ -116,9 +131,9 @@ def hlcm_luz_simulate(households, buildings, aggregations):
         choosers.update_col_from_series(out_fname, new_buildings)
         utils._print_number_unplaced(choosers, out_fname)
         
-        vacant_units = buildings.to_frame(columns = [vacant_fname])[vacant_fname][buildings.luz_id_buildings == luz]
-        print "    and there are now %d empty units" % vacant_units.sum()
-        print "    and %d overfull buildings" % len(vacant_units[vacant_units < 0])
+        # vacant_units = buildings.to_frame(columns = [vacant_fname])[vacant_fname][buildings.luz_id_buildings == luz]
+        # print "    and there are now %d empty units" % vacant_units.sum()
+        # print "    and %d overfull buildings" % len(vacant_units[vacant_units < 0])
     
 @sim.model('hlcm_simulate')
 def hlcm_simulate(households, buildings, aggregations, settings):
