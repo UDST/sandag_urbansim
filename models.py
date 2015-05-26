@@ -223,20 +223,14 @@ def feasibility(parcels, settings,
                 if price_scaling_factor > 3.0:
                     return feasibility
                 # Get targets
-                targets = residential_space_targets()
-                target_units = targets[form]
+                target_units = residential_space_targets()[form]
                 #Calculate number of profitable units
-                ave_unit_size = parcels.ave_sqft_per_unit
-                ave_unit_size[ave_unit_size < 400] = 400
-                feasibility["ave_unit_size"] = ave_unit_size
-                feasibility['current_units'] = parcels.total_residential_units
-                feasibility["parcel_size"] = parcels.parcel_size
-                feasibility = feasibility[feasibility.parcel_size < 200000]
-                feasibility['residential_units'] = np.round(feasibility.residential_sqft /
-                                               feasibility.ave_unit_size)
-                feasibility['net_units'] = feasibility.residential_units - feasibility.current_units
-                feasibility.net_units = feasibility.net_units.fillna(0)
-                profitable_units = int(feasibility.net_units.sum())
+                d = {}
+                d[form] = feasibility
+                feas = pd.concat(d.values(), keys=d.keys(), axis=1)
+                dev = developer.Developer(feas)
+                profitable_units = run_developer(dev, form, target_units, get_year(), build = False)
+
                 print 'Feasibility given current prices/zonining indicates %s profitable units and target of %s' % (profitable_units, target_units)
                 
                 if profitable_units < target_units:
@@ -248,6 +242,10 @@ def feasibility(parcels, settings,
                                         
                     return iter_feasibility(feasibility, price_scaling_factor)
                 else:
+                    price_scaling_factor += .1
+                    parcels[use] = parcels[use] * price_scaling_factor
+                    feasibility = pf.lookup(form, parcels[allowed], only_built=True,
+                                        pass_through=[])
                     return feasibility
             feasibility = iter_feasibility(feasibility, 1.0)
             
@@ -289,6 +287,7 @@ def feasibility(parcels, settings,
         parcels = sim.get_table('parcels').to_frame()
         
         residential_to_yearly = True
+        # parcel_filter = settings['feasibility']['parcel_filter']
         parcel_filter = None
         pfc = sqftproforma.SqFtProFormaConfig()
         pfc.forms = {form: {use : 1.0}}
@@ -313,6 +312,7 @@ def feasibility(parcels, settings,
         parcels = sim.get_table('parcels').to_frame()
         
         residential_to_yearly = False
+        # parcel_filter = settings['feasibility']['parcel_filter']
         parcel_filter = None
         pfc = sqftproforma.SqFtProFormaConfig()
         pfc.forms = {form: {use : 1.0}}
@@ -378,6 +378,12 @@ def feasibility(parcels, settings,
     far_predictions = pd.concat(d.values(), keys=d.keys(), axis=1)
     sim.add_table("feasibility", far_predictions)
     
+def get_year():
+    year = sim.get_injectable('year')
+    if year is None:
+        year = 2012
+    return year
+    
 def residential_space_targets():
     defm_resunit_controls = pd.read_csv('data/defm_res_unit_controls.csv')
     buildings = sim.get_table('buildings').to_frame(columns = ['development_type_id', 'residential_units'])
@@ -386,9 +392,7 @@ def residential_space_targets():
     number_sfa_units = buildings[buildings.development_type_id == 20].residential_units.sum()
     number_mf_units = buildings[buildings.development_type_id == 21].residential_units.sum()
 
-    year = sim.get_injectable('year')
-    if year is None:
-        year = 2012
+    year = get_year()
         
     sf_target = defm_resunit_controls[defm_resunit_controls.year == year].to_dict()['single_family'].itervalues().next()
     sfa_target = defm_resunit_controls[defm_resunit_controls.year == year].to_dict()['sf_attached'].itervalues().next()
@@ -410,9 +414,7 @@ def non_residential_space_targets():
     office_sqft = buildings[buildings.development_type_id == 4].non_residential_sqft.sum()
     retail_sqft = buildings[buildings.development_type_id == 5].non_residential_sqft.sum()
     
-    year = sim.get_injectable('year')
-    if year is None:
-        year = 2012
+    year = get_year()
         
     defm_nonres_controls = defm_nonres_controls[defm_nonres_controls.yr == year]
     light_industrial_target = defm_nonres_controls[defm_nonres_controls.development_type_id == 2].total_min_sqft.values[0] * vacancy_multiplier
@@ -428,31 +430,24 @@ def non_residential_space_targets():
     targets = {'light_industrial':light_industrial_difference, 'heavy_industrial':heavy_industrial_difference, 'office':office_difference, 'retail':retail_difference}
     return targets
 
-@sim.model('residential_developer')
-def residential_developer(parcels):
-    feas = sim.get_table('feasibility').to_frame()
-    
-    year = sim.get_injectable('year')
-    if year is None:
-        year = 2012
-              
-    targets = residential_space_targets()
-    
-    def run_developer(dev, residential_form, target):
-        old_buildings = sim.get_table('buildings').to_frame(sim.get_table('buildings').local_columns)
-        print 'Residential unit target for %s is %s.' % (residential_form, target)
-        if target > 0:
-            print residential_form
-            new_buildings = dev.pick(residential_form,
-                                     target,
-                                     parcels.parcel_size,
-                                     parcels.ave_sqft_per_unit,
-                                     parcels.total_residential_units,
-                                     max_parcel_size=2000000,
-                                     min_unit_size=400,
-                                     drop_after_build=True,
-                                     residential=True,
-                                     bldg_sqft_per_job=400.0)
+def run_developer(dev, residential_form, target, year, build = False):
+    old_buildings = sim.get_table('buildings').to_frame(sim.get_table('buildings').local_columns)
+    parcels = sim.get_table('parcels')
+    print 'Residential unit target for %s is %s.' % (residential_form, target)
+    if target > 0:
+        print residential_form
+        drop_after_build = True if build else False
+        new_buildings = dev.pick(residential_form,
+                                 target,
+                                 parcels.parcel_size,
+                                 parcels.ave_sqft_per_unit,
+                                 parcels.total_residential_units,
+                                 max_parcel_size=2000000,
+                                 min_unit_size=400,
+                                 drop_after_build=True,
+                                 residential=True,
+                                 bldg_sqft_per_job=400.0)
+        if build:
             print 'Constructed %s %s buildings, totaling %s new residential_units' % (len(new_buildings), residential_form, new_buildings.residential_units.sum())
             overshoot = new_buildings.residential_units.sum() - target
             print 'Overshot target by %s units' % (overshoot)
@@ -479,8 +474,42 @@ def residential_developer(parcels):
             new_buildings['res_price_per_sqft'] = 0.0
             new_buildings['nonres_rent_per_sqft'] = 0.0
             new_buildings = new_buildings[old_buildings.columns]
+            
+            # Remove redeveloped buildings
+            redev_buildings = old_buildings.parcel_id.isin(new_buildings.parcel_id)
+            l = len(old_buildings)
+            drop_buildings = old_buildings[redev_buildings]
+            old_buildings = old_buildings[np.logical_not(redev_buildings)]
+            l2 = len(old_buildings)
+            if l2-l > 0:
+                print "Dropped {} buildings because they were redeveloped".\
+                    format(l2-l)
+
+            for tbl in ['households', 'jobs']:
+                agents = sim.get_table(tbl)
+                agents = agents.to_frame(agents.local_columns)
+                displaced_agents = agents.building_id.isin(drop_buildings.index)
+                print "Unplaced {} before: {}".format(tbl, len(agents.query(
+                                                      "building_id == -1")))
+                agents.building_id[displaced_agents] = -1
+                print "Unplaced {} after: {}".format(tbl, len(agents.query(
+                                                     "building_id == -1")))
+                sim.add_table(tbl, agents)
+            
+            # Update buildings table
             all_buildings = dev.merge(old_buildings, new_buildings)
             sim.add_table("buildings", all_buildings)
+        
+        else:
+            return new_buildings.residential_units.sum()
+    
+@sim.model('residential_developer')
+def residential_developer(parcels):
+    feas = sim.get_table('feasibility').to_frame()
+    
+    year = get_year()
+              
+    targets = residential_space_targets()
     
     print "{:,} feasible buildings before running developer".format(
           len(feas))
@@ -525,7 +554,7 @@ def residential_developer(parcels):
                                 print '    Moving %s units to the uncontrolled bucket because only part of the target difference was feasible' % reallocate
                                 targets[residential_form] = targets[residential_form] + reallocate
                             dev_luz = developer.Developer(feas_subset)
-                            run_developer(dev_luz, residential_form, difference)
+                            run_developer(dev_luz, residential_form, difference, year, build = True)
                             #Store the unbuilt feasible parcels and add back into feasibility later
                             mini_feases.append(dev_luz.feasibility)
                         else:
@@ -538,7 +567,7 @@ def residential_developer(parcels):
     for residential_form in ['mf_residential', 'sf_attached', 'sf_detached', ]:
         if residential_form in targets.keys():
             target = targets[residential_form]
-            run_developer(dev, residential_form, target)
+            run_developer(dev, residential_form, target, year, build = True)
 
     #Remaining feasible parcels back to feas after running controlled LUZs so that nonres can be built on these parcels if multiple forms allowed and not already built on
     if len(overrides) > 0:
@@ -562,9 +591,7 @@ def non_residential_developer(parcels):
     print "{:,} feasible buildings before running developer".format(
               len(dev.feasibility))
     
-    year = sim.get_injectable('year')
-    if year is None:
-        year = 2012
+    year = get_year()
     
     targets = non_residential_space_targets()
            
@@ -605,6 +632,29 @@ def non_residential_developer(parcels):
                 new_buildings['res_price_per_sqft'] = 0.0
                 new_buildings['nonres_rent_per_sqft'] = 0.0
                 new_buildings = new_buildings[old_buildings.columns]
+                
+                # Remove redeveloped buildings
+                redev_buildings = old_buildings.parcel_id.isin(new_buildings.parcel_id)
+                l = len(old_buildings)
+                drop_buildings = old_buildings[redev_buildings]
+                old_buildings = old_buildings[np.logical_not(redev_buildings)]
+                l2 = len(old_buildings)
+                if l2-l > 0:
+                    print "Dropped {} buildings because they were redeveloped".\
+                        format(l2-l)
+
+                for tbl in ['households', 'jobs']:
+                    agents = sim.get_table(tbl)
+                    agents = agents.to_frame(agents.local_columns)
+                    displaced_agents = agents.building_id.isin(drop_buildings.index)
+                    print "Unplaced {} before: {}".format(tbl, len(agents.query(
+                                                          "building_id == -1")))
+                    agents.building_id[displaced_agents] = -1
+                    print "Unplaced {} after: {}".format(tbl, len(agents.query(
+                                                         "building_id == -1")))
+                    sim.add_table(tbl, agents)
+                    
+                # Update buildings table
                 all_buildings = dev.merge(old_buildings, new_buildings)
                 sim.add_table("buildings", all_buildings)
                 
@@ -613,9 +663,7 @@ def non_residential_developer(parcels):
     
 @sim.model('scheduled_development_events')
 def scheduled_development_events(buildings):
-    year = sim.get_injectable('year')
-    if year is None:
-        year = 2012
+    year = get_year()
     sched_dev = pd.read_csv("./data/scheduled_development_events.csv")
     sched_dev = sched_dev[sched_dev.year_built==year]
     sched_dev['residential_sqft'] = sched_dev.sqft_per_unit*sched_dev.residential_units
@@ -633,9 +681,7 @@ def scheduled_development_events(buildings):
         
 @sim.model('model_integration_indicators')
 def model_integration_indicators():
-    year = sim.get_injectable('year')
-    if year is None:
-        year = 2012
+    year = get_year()
     
     #Households by MGRA to PASEF
     print 'Exporting indicators: households by MGRA to PASEF'
