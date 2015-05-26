@@ -16,7 +16,6 @@ sim.run(["neighborhood_vars", #"scheduled_development_events", #scheduled events
          "rsh_simulate", "nrh_simulate", "nrh_simulate2",   #price models
          "jobs_transition", "elcm_simulate", "households_transition", "hlcm_luz_simulate", #demand/location models
          "price_vars", "feasibility", "residential_developer", "non_residential_developer", #supply/proforma models
-         "model_integration_indicators" #indicators for pasef/pecas
          ], years=[2013, 2014, 2015,])
 
 # Summarize results at MSA level
