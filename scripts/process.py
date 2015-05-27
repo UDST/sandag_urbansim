@@ -74,13 +74,13 @@ households = db_to_df('select * from staging.households;').set_index('lu_hh_id')
 del households['index']
 del households['id']
 households.index.name = 'household_id'
-households.building_id = -1
+households['building_id'] = -1
 households = households.rename(columns = {'mgra13':'mgra_id'})
 
 jobs = db_to_df('select * from staging.jobs_lehd;').set_index('job_id')
 del jobs['index']
 del jobs['id']
-jobs.building_id = -1
+jobs['building_id'] = -1
 
 
 ## Capacity-constrained random allocation of agents
@@ -127,7 +127,7 @@ if 'mgra_id' in households.columns:
     del households['mgra_id']
     
 for df in [jobs, households]:
-    df.building_id[df.building_id.isnull()] = -1
+    df['building_id'][df['building_id'].isnull()] = -1
     for col in df.columns:
         df[col] = df[col].astype('int')
 

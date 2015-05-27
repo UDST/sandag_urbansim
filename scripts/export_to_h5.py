@@ -37,6 +37,10 @@ nodes = pd.read_csv(nodes_path).set_index('node_id')
 edges = pd.read_csv(edges_path)
 nodes.index.name = 'index'
 
+# Building sqft per job_id
+sqft_per_job = db_to_df('select * from staging.sqft_per_job_by_devtype;')
+sqft_per_job = sqft_per_job[['luz_id', 'development_type_id', 'sqft_per_emp']]
+
 # Get price datasets
 costar = db_to_df('select * from public.costar')
 if 'id' in costar.columns:
@@ -60,6 +64,7 @@ store['zoning'] = zoning
 store['zoning_allowed_uses'] = zoning_allowed_uses
 store['fee_schedule'] = fee_schedule
 store['parcel_fee_schedule'] = parcel_fee_schedule
+store['building_sqft_per_job'] = sqft_per_job
 
 store.close()
 
