@@ -189,7 +189,13 @@ def feasibility(parcels, settings,
             parcels[shifter_name][parcels.msa_id == msa_id] = shift
             
         parcels[use] = parcels[use] * parcels[shifter_name]
-       
+        
+        #LUZ shifter
+        if use == 'residential':
+            target_luz = pd.read_csv('.\\data\\calibration\\target_luz.csv').values.flatten()
+            luz_shifter = pd.read_csv('.\\data\\calibration\\luz_du_shifter.csv').values[0][0]
+            parcels[use][parcels.luz_id.isin(target_luz)] = parcels[use][parcels.luz_id.isin(target_luz)] * luz_shifter
+            
         # convert from cost to yearly rent
         if residential_to_yearly:
             parcels[use] *= pf.config.cap_rate
