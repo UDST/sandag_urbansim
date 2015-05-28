@@ -97,22 +97,12 @@ def hlcm_luz_simulate(households, buildings, aggregations):
         
         indexes = np.repeat(vacant_units.index.values,
                             vacant_units.values.astype('int'))
-        # isin = pd.Series(indexes).isin(locations_df_luz.index)
-        # missing = len(isin[isin == False])
-        # indexes = indexes[isin.values]
         units = locations_df_luz.loc[indexes].reset_index()
         utils.check_nas(units)
 
         print "    for a total of %d temporarily empty units" % vacant_units.sum()
-        print "    in %d buildings total in the region" % len(vacant_units)
+        print "    in %d buildings total in the LUZ" % len(vacant_units)
 
-        # if missing > 0:
-            # print "WARNING: %d indexes aren't found in the locations df -" % \
-                # missing
-            # print "    this is usually because of a few records that don't join "
-            # print "    correctly between the locations df and the aggregations tables"
-
-        
         if len(movers_luz) > vacant_units.sum():
             print "WARNING: Not enough locations for movers"
             print "    reducing locations to size of movers for performance gain"
@@ -130,10 +120,6 @@ def hlcm_luz_simulate(households, buildings, aggregations):
         
         choosers.update_col_from_series(out_fname, new_buildings)
         utils._print_number_unplaced(choosers, out_fname)
-        
-        # vacant_units = buildings.to_frame(columns = [vacant_fname])[vacant_fname][buildings.luz_id_buildings == luz]
-        # print "    and there are now %d empty units" % vacant_units.sum()
-        # print "    and %d overfull buildings" % len(vacant_units[vacant_units < 0])
     
 @sim.model('hlcm_simulate')
 def hlcm_simulate(households, buildings, aggregations, settings):

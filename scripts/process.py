@@ -56,7 +56,7 @@ parcels = parcels.set_index('parcel_id')
 buildings = db_to_df('select * from staging.buildings;')
 #Add mgra_id and block_id to the buildings table for demand agent allocation purposes
 ##We lose 2 buildings in this merge-  2 buildings have invalid parcel_ids
-buildings = pd.merge(buildings, parcels[['mgra_id', 'block_geoid']], left_on = 'parcel_id', right_index = True)
+buildings = pd.merge(buildings, parcels[['luz_id', 'mgra_id', 'block_geoid']], left_on = 'parcel_id', right_index = True)
 buildings = buildings.rename(columns = {'bid':'building_id', 'dev_typeid':'development_type_id', 'imprvvalue':'improvement_value',
                                         'res_unit':'residential_units', 'nonressqft':'non_residential_sqft', 'ressqft':'residential_sqft',
                                         'year_build':'year_built', 'block_geoid':'block_id'})
@@ -68,7 +68,18 @@ del buildings['shape_ar_1']
 del buildings['price_per_']
 del buildings['geom']
 buildings.block_id = buildings.block_id.astype('int64')
-buildings['job_spaces'] = np.round(buildings.non_residential_sqft/200).astype('int')
+
+# Job spaces
+sqft_per_job = db_to_df('select * from staging.sqft_per_job_by_devtype;')
+bsqft_job = sqft_per_job[['luz_id', 'development_type_id', 'sqft_per_emp']]
+merged = pd.merge(buildings.reset_index(), bsqft_job, left_on = ['luz_id', 'development_type_id'], right_on = ['luz_id', 'development_type_id'])
+merged = merged.set_index('building_id')
+merged.sqft_per_emp[merged.sqft_per_emp < 40] = 40
+merged['job_spaces'] = np.ceil(merged.non_residential_sqft / merged.sqft_per_emp)
+job_spaces = pd.Series(merged.job_spaces, index = buildings.index)
+buildings['job_spaces'] = job_spaces
+buildings.job_spaces[buildings.job_spaces.isnull()] = np.ceil(buildings.non_residential_sqft/200.0)
+buildings['job_spaces'] = buildings['job_spaces'].astype('int')
 
 households = db_to_df('select * from staging.households;').set_index('lu_hh_id')
 del households['index']
@@ -136,6 +147,9 @@ df_to_db(households, 'households', schema=loader.tables.public)
 
 
 #Export formated buildings to db
+if 'luz_id' in buildings.columns:
+    del buildings['luz_id']
+
 if 'mgra_id' in buildings.columns:
     del buildings['mgra_id']
     

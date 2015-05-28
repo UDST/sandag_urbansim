@@ -103,6 +103,7 @@ csvs = {
 }
 
 for tbl in csvs.iterkeys():
+    print tbl
     csv = loader.get_path(csvs[tbl])
     df = pd.read_csv(csv)
     df.index.name = 'index'

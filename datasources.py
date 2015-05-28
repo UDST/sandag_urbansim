@@ -68,6 +68,12 @@ def buildings(store):
 def parcels(store):
     df = store['parcels']
     df['acres'] = df.parcel_acres
+    
+    #Delete duplicate index (parcel_id)
+    df['rownum'] = df.index
+    df = df.drop_duplicates(cols='rownum', take_last=True)
+    del df['rownum']
+    
     return df
     
 @sim.table('annual_household_control_totals', cache=True)

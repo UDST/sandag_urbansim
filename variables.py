@@ -165,8 +165,18 @@ def is_retail(buildings):
     return (buildings.development_type_id == 5).astype('int')
 
 @sim.column('buildings', 'job_spaces')
-def job_spaces(parcels, buildings):
-    return np.round(buildings.non_residential_sqft / 200.0)
+def job_spaces():
+    store = sim.get_injectable('store')
+    b = sim.get_table('buildings').to_frame(['luz_id', 'development_type_id','non_residential_sqft'])
+    bsqft_job = store['building_sqft_per_job']
+    merged = pd.merge(b.reset_index(), bsqft_job, left_on = ['luz_id', 'development_type_id'], right_on = ['luz_id', 'development_type_id'])
+    merged = merged.set_index('building_id')
+    merged.sqft_per_emp[merged.sqft_per_emp < 40] = 40
+    merged['job_spaces'] = np.ceil(merged.non_residential_sqft / merged.sqft_per_emp)
+    job_spaces = pd.Series(merged.job_spaces, index = b.index)
+    b['job_spaces'] = job_spaces
+    b.job_spaces[b.job_spaces.isnull()] = np.ceil(b.non_residential_sqft/200.0)
+    return b.job_spaces
 
 @sim.column('buildings', 'luz_id')
 def luz_id(buildings, parcels):
