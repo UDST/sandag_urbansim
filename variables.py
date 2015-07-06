@@ -424,7 +424,6 @@ def building_purchase_price(parcels):
     return (parcels.total_sqft * parcels.building_purchase_price_sqft).\
         reindex(parcels.index).fillna(0)
 
-## Next step:  run sqft proforma separately for each development type, and for each dev type account for the relevant fees in the cost per sqft variable in sqftproforma.  Actually, the relevant place is going to be in the the building_purchase_price_sqft variable (subtract fees here)
 @sim.column('parcels', 'land_cost')
 def land_cost(parcels):
     return parcels.building_purchase_price + parcels.parcel_acres * 43560 * 12.21

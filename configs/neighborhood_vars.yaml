@@ -249,3 +249,10 @@ variable_definitions:
     radius: 1500
     aggregation: sum
     decay: flat
+    
+  - name: residential_units_800m
+    dataframe: buildings
+    varname: residential_units
+    radius: 800
+    aggregation: sum
+    decay: flat

@@ -115,13 +115,6 @@ def pecas_prices(store):
     df = store['pecas_prices']
     return df
 
-# a table of home sales data
-# @sim.table('homesales', cache=True)
-# def homesales(store):
-    # df = store['homesales']
-    # df = df.reset_index(drop=True)
-    # return df
-
 
 # this specifies the relationships between tables
 sim.broadcast('nodes', 'costar', cast_index=True, onto_on='node_id')

@@ -169,10 +169,6 @@ costar = db_to_df('select * from staging.costar2012')
 
 costar = costar[['property_id', 'rentable_building_area', 'number_of_stories','year_built', 'property_type', 'secondary_type', 'average_weighted_rent', 'parcelid' ]]
 
-# for tex_col in ['property_type', 'secondary_type']:
-#        costar[tex_col] = costar[tex_col].fillna(' ')
-#        costar[tex_col] = costar[tex_col].str.encode('utf-8')
-
 costar.index.name = 'idx'
 
 costar = costar.rename(columns = {'property_id':'building_id', 'rentable_building_area':'non_residential_sqft', 
