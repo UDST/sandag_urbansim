@@ -341,6 +341,8 @@ def parcel_size(parcels):
     
 @sim.column('parcels', 'proportion_developable')
 def proportion_developable(parcels):
+    parcels = parcels.to_frame(columns = ['development_type_id', 'proportion_undevelopable'])
+    parcels.proportion_undevelopable[parcels.development_type_id == 24] = 1.0 # Set right-of-way parcels as undevelopable
     return 1.0 - parcels.proportion_undevelopable
     
 @sim.injectable('parcel_is_allowed_func', autocall=False)

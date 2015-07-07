@@ -11,7 +11,11 @@ from urbansim_defaults import utils
 import numpy as np
 import pandas as pd
 import pandana as pdna
+import cStringIO
 from cStringIO import StringIO
+import psycopg2
+import pandas.io.sql as sql
+
 
 @sim.model('build_networks')
 def build_networks(parcels):
@@ -694,3 +698,97 @@ def model_integration_indicators():
     pecas_nonres_indicators = b[b.non_residential_sqft > 0].groupby(['luz_id', 'development_type_id']).non_residential_sqft.sum().reset_index()
     pecas_nonres_indicators.columns = ['luz_id', 'development_type_id', 'non_residential_sqft']
     pecas_nonres_indicators.to_csv('./data/pecas_urbansim_exchange/luz_nrsf_%s.csv'%year, index = False)
+    
+@sim.model('buildings_to_uc')
+def buildings_to_uc(buildings):
+    year = get_year()
+    
+    # Export newly predicted buildings (from proforma or Sitespec) to Urban Canvas
+    b = buildings.to_frame(buildings.local_columns)
+    new_buildings =  b[(b.note=='simulated') | (b.note.str.startswith('Sitespec'))]
+    new_buildings = new_buildings[new_buildings.year_built == year]
+    new_buildings = new_buildings.reset_index()
+    new_buildings = new_buildings.rename(columns = {'development_type_id':'building_type_id'})
+    new_buildings['building_sqft'] = new_buildings.residential_sqft + new_buildings.non_residential_sqft
+    new_buildings['sqft_per_unit'] =  new_buildings.residential_sqft/new_buildings.residential_units
+    del new_buildings['res_price_per_sqft']
+    del new_buildings['nonres_rent_per_sqft']
+    new_buildings.parcel_id = new_buildings.parcel_id.astype('int32')
+    new_buildings.residential_units = new_buildings.residential_units.astype('int32')
+    new_buildings.non_residential_sqft = new_buildings.non_residential_sqft.astype('int32')
+    new_buildings.stories = new_buildings.stories.astype('int32')
+    new_buildings.residential_sqft = new_buildings.residential_sqft.astype('int32')
+    new_buildings.building_sqft = new_buildings.building_sqft.fillna(0).astype('int32')
+    new_buildings.sqft_per_unit = new_buildings.sqft_per_unit.fillna(0).astype('int32')
+    
+    # Urban Canvas database connection
+    conn_string = "host='urbancanvas.cp2xwchuariu.us-west-2.rds.amazonaws.com' dbname='sandag_testing' user='sandag' password='parcel22building' port=5432"
+    
+    if 'uc_conn' not in sim._INJECTABLES.keys():
+        conn=psycopg2.connect(conn_string)
+        cur = conn.cursor()
+        
+        sim.add_injectable('uc_conn', conn)
+        sim.add_injectable('uc_cur', cur)
+        
+    else:
+        conn = sim.get_injectable('uc_conn')
+        cur = sim.get_injectable('uc_cur')
+        
+    def exec_sql_uc(query):
+        try:
+            cur.execute(query)
+            conn.commit()
+        except:
+            conn=psycopg2.connect(conn_string)
+            cur = conn.cursor()
+            sim.add_injectable('uc_conn', conn)
+            sim.add_injectable('uc_cur', cur)
+            cur.execute(query)
+            conn.commit()
+            
+    def get_val_from_uc_db(query):
+        try:
+            result = sql.read_frame(query, conn)
+            return result.values[0][0]
+        except:
+            conn=psycopg2.connect(conn_string)
+            cur = conn.cursor()
+            sim.add_injectable('uc_conn', conn)
+            sim.add_injectable('uc_cur', cur)
+            result = sql.read_frame(query, conn)
+            return result.values[0][0]
+        
+    max_bid = get_val_from_uc_db("select max(building_id) FROM building where building_id<100000000;")
+    new_buildings.building_id = np.arange(max_bid+1, max_bid+1+len(new_buildings))
+
+    if 'projects_num' not in sim._INJECTABLES.keys(): 
+        nextval = get_val_from_uc_db("SELECT MAX(ID)+1 FROM SCENARIO WHERE ID < 100000;")
+        sim.add_injectable('projects_num', nextval)
+        
+        id = get_val_from_uc_db("select max(id)+1 from scenario_project;")
+        
+        exec_sql_uc("INSERT INTO scenario(id, name) VALUES(%s, 'Run #%s');" % (nextval,nextval))
+        
+        exec_sql_uc("INSERT INTO scenario_project(id, scenario, project) VALUES(%s, %s, 1);" % (id,nextval))
+                    
+        id = get_val_from_uc_db("select max(id)+1 from scenario_project;")
+        
+        exec_sql_uc("INSERT INTO scenario_project(id, scenario, project) VALUES(%s, %s, %s);" % (id,nextval,nextval))
+        
+        
+    else:
+        nextval = sim.get_injectable('projects_num')
+
+    nextval = '{' + str(nextval) + '}'
+    new_buildings['projects'] = nextval
+
+    valid_from = '{' + str(year) + '-1-1}'
+    new_buildings['valid_from'] = valid_from
+    print 'Exporting %s buildings to Urbancanvas database for project %s and year %s.' % (len(new_buildings),nextval,year)
+    output = cStringIO.StringIO()
+    new_buildings.to_csv(output, sep='\t', header=False, index=False)
+    output.seek(0)
+    cur.copy_from(output, 'building', columns =tuple(new_buildings.columns.values.tolist()))
+    conn.commit()
+    
