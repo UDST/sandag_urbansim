@@ -43,7 +43,7 @@ jobs_transition:
 
 
 feasibility:
-  parcel_filter: oldest_building > 1930
+  parcel_filter: newest_building < 2010
   residential_to_yearly: True
   pass_through:
     - oldest_building

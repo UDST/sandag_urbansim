@@ -283,8 +283,8 @@ def feasibility(parcels, settings,
         parcels = sim.get_table('parcels').to_frame()
         
         residential_to_yearly = True
-        # parcel_filter = settings['feasibility']['parcel_filter']
-        parcel_filter = None
+        parcel_filter = settings['feasibility']['parcel_filter']
+        #parcel_filter = None
         pfc = sqftproforma.SqFtProFormaConfig()
         pfc.forms = {form: {use : 1.0}}
         pfc.uses = [use]
@@ -308,8 +308,8 @@ def feasibility(parcels, settings,
         parcels = sim.get_table('parcels').to_frame()
         
         residential_to_yearly = False
-        # parcel_filter = settings['feasibility']['parcel_filter']
-        parcel_filter = None
+        parcel_filter = settings['feasibility']['parcel_filter']
+        #parcel_filter = None
         pfc = sqftproforma.SqFtProFormaConfig()
         pfc.forms = {form: {use : 1.0}}
         pfc.uses = [use]
@@ -763,19 +763,12 @@ def buildings_to_uc(buildings):
     new_buildings.building_id = np.arange(max_bid+1, max_bid+1+len(new_buildings))
 
     if 'projects_num' not in sim._INJECTABLES.keys(): 
-        nextval = get_val_from_uc_db("SELECT MAX(ID)+1 FROM SCENARIO WHERE ID < 100000;")
+        exec_sql_uc("INSERT INTO scenario(id, name, type) select nextval('scenario_id_seq'), 'Run #' || cast(currval('scenario_id_seq') as character varying), 1;")
+        nextval = get_val_from_uc_db("SELECT MAX(ID) FROM SCENARIO WHERE ID < 100000;")
         sim.add_injectable('projects_num', nextval)
         
-        id = get_val_from_uc_db("select max(id)+1 from scenario_project;")
-        
-        exec_sql_uc("INSERT INTO scenario(id, name) VALUES(%s, 'Run #%s');" % (nextval,nextval))
-        
-        exec_sql_uc("INSERT INTO scenario_project(id, scenario, project) VALUES(%s, %s, 1);" % (id,nextval))
-                    
-        id = get_val_from_uc_db("select max(id)+1 from scenario_project;")
-        
-        exec_sql_uc("INSERT INTO scenario_project(id, scenario, project) VALUES(%s, %s, %s);" % (id,nextval,nextval))
-        
+        exec_sql_uc("INSERT INTO scenario_project(scenario, project) VALUES(%s, 1);" % nextval)
+        exec_sql_uc("INSERT INTO scenario_project(scenario, project) VALUES(%s, %s);" % (nextval,nextval))
         
     else:
         nextval = sim.get_injectable('projects_num')

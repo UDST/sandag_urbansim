@@ -447,3 +447,8 @@ def total_mfr_du(parcels, buildings):
     buildings = buildings.to_frame(buildings.local_columns)
     return buildings[buildings.development_type_id == 21].residential_units.groupby(buildings.parcel_id).sum().\
         reindex(parcels.index).fillna(0)
+        
+@sim.column('parcels', 'newest_building')
+def newest_building(parcels, buildings):
+    return buildings.year_built.groupby(buildings.parcel_id).max().\
+        reindex(parcels.index).fillna(0)
