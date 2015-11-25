@@ -6,7 +6,7 @@ import pandas.io.sql as sql
 from spandex import TableLoader
 loader = TableLoader()
 
-conn_string = "host='urbancanvas.cp2xwchuariu.us-west-2.rds.amazonaws.com' dbname='sandag_testing' user='sandag' password='parcel22building' port=5432"
+conn_string = "host='urbancanvas.cp2xwchuariu.us-west-2.rds.amazonaws.com' dbname='sandag_testing' user='sandag' password='PASSWORD' port=5432"
 conn=psycopg2.connect(conn_string)
 cur = conn.cursor()
 

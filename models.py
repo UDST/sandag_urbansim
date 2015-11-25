@@ -722,7 +722,7 @@ def buildings_to_uc(buildings):
     new_buildings.sqft_per_unit = new_buildings.sqft_per_unit.fillna(0).astype('int32')
     
     # Urban Canvas database connection
-    conn_string = "host='urbancanvas.cp2xwchuariu.us-west-2.rds.amazonaws.com' dbname='sandag_testing' user='sandag' password='parcel22building' port=5432"
+    conn_string = "host='urbancanvas.cp2xwchuariu.us-west-2.rds.amazonaws.com' dbname='sandag_testing' user='sandag' password='PASSWORD' port=5432"
     
     if 'uc_conn' not in sim._INJECTABLES.keys():
         conn=psycopg2.connect(conn_string)
